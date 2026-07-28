@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String                   @id @default(cuid())
+  email         String                   @unique
+  passwordHash  String
+  name          String?
+  emailVerified DateTime?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  profile       Profile?
+  resumes       Resume[]
+  preferences   UserPreferences?
+  emailTokens   EmailVerificationToken[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model UserPreferences {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// online = Gemini → Cerebras → Groq; local = Ollama only
+  aiMode String @default("online")
+}
+
+model Profile {
+  id             String          @id @default(cuid())
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName       String          @default("")
+  headline       String          @default("")
+  summary        String          @default("")
+  email          String          @default("")
+  phone          String          @default("")
+  address        String          @default("")
+  website        String          @default("")
+  github         String          @default("")
+  linkedin       String          @default("")
+  portfolio      String          @default("")
+  imageUrl       String?
+  updatedAt      DateTime        @updatedAt
+  experiences    Experience[]
+  education      Education[]
+  projects       Project[]
+  skills         Skill[]
+  certifications Certification[]
+  awards         Award[]
+  publications   Publication[]
+  languages      Language[]
+  interests      Interest[]
+}
+
+model Experience {
+  id             String   @id @default(cuid())
+  profileId      String
+  profile        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  company        String   @default("")
+  role           String   @default("")
+  employmentType String   @default("")
+  location       String   @default("")
+  startDate      String   @default("")
+  endDate        String   @default("")
+  current        Boolean  @default(false)
+  description    String   @default("")
+  achievements   String   @default("")
+  technologies   String   @default("")
+  skills         String   @default("")
+  keywords       String   @default("")
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Education {
+  id           String   @id @default(cuid())
+  profileId    String
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  institution  String   @default("")
+  degree       String   @default("")
+  field        String   @default("")
+  grade        String   @default("")
+  location     String   @default("")
+  startDate    String   @default("")
+  endDate      String   @default("")
+  description  String   @default("")
+  achievements String   @default("")
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  profileId    String
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name         String   @default("")
+  description  String   @default("")
+  githubUrl    String   @default("")
+  liveUrl      String   @default("")
+  technologies String   @default("")
+  duration     String   @default("")
+  role         String   @default("")
+  impact       String   @default("")
+  tags         String   @default("")
+  featured     Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Skill {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  category  String   @default("")
+  name      String   @default("")
+  level     String   @default("")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Certification {
+  id             String   @id @default(cuid())
+  profileId      String
+  profile        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name           String   @default("")
+  organization   String   @default("")
+  credentialId   String   @default("")
+  issueDate      String   @default("")
+  expiryDate     String   @default("")
+  verificationUrl String  @default("")
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Award {
+  id           String   @id @default(cuid())
+  profileId    String
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title        String   @default("")
+  organization String   @default("")
+  date         String   @default("")
+  description  String   @default("")
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Publication {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title     String   @default("")
+  publisher String   @default("")
+  date      String   @default("")
+  url       String   @default("")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Language {
+  id          String   @id @default(cuid())
+  profileId   String
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name        String   @default("")
+  proficiency String   @default("")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Interest {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name      String   @default("")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Resume {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  template    String          @default("classic")
+  accentColor String          @default("#1f7a6c")
+  fontFamily  String          @default("helvetica")
+  fontSize    String          @default("medium")
+  pageSize    String          @default("letter")
+  /// JSON: visible sections, selected experience/project/education IDs, section order
+  config      String          @default("{}")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  versions    ResumeVersion[]
+}
+
+model ResumeVersion {
+  id         String   @id @default(cuid())
+  resumeId   String
+  resume     Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  label      String   @default("")
+  template   String   @default("classic")
+  exportType String   @default("")
+  snapshot   String   @default("{}")
+  createdAt  DateTime @default(now())
+}
