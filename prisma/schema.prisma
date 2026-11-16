@@ -19,7 +19,8 @@ model User {
   resumes       Resume[]
   preferences   UserPreferences?
   emailTokens   EmailVerificationToken[]
-  upworkLeads   UpworkJobLead[]
+  upworkLeads      UpworkJobLead[]
+  jobApplications  JobApplication[]
 }
 
 model EmailVerificationToken {
@@ -246,8 +247,33 @@ model UpworkJobLead {
   atsScoredAt      DateTime?
   notes            String    @default("")
   status           String    @default("interested")
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  jobApplications  JobApplication[]
+}
+
+model JobApplication {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  upworkLeadId      String?
+  upworkLead        UpworkJobLead?   @relation(fields: [upworkLeadId], references: [id], onDelete: SetNull)
+  title             String           @default("")
+  description       String           @default("")
+  jobUrl            String           @default("N/A")
+  jobSource         String           @default("other")
+  techStackJson     String           @default("[]")
+  status            String           @default("draft")
+  appliedAt         DateTime?
+  notes             String           @default("")
+  skillFitScore     Int?
+  skillFitJson      String           @default("{}")
+  skillFitAt        DateTime?
+  atsScore          Int?
+  atsAnalysisJson   String           @default("{}")
+  atsScoredAt       DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 }
 
 model ResumeVersion {

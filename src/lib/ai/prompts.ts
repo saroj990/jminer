@@ -32,6 +32,35 @@ Return tailored JSON only.`;
   ];
 }
 
+export function buildSkillsFitMessages(input: {
+  resume: ResumeData;
+  jobDescription: string;
+}) {
+  const system = `You compare a candidate's skill set to a job description.
+Use only skills evidenced in the resume JSON (skills section, experience bullets, projects). Do not invent skills.
+Return ONLY valid JSON:
+{
+  "score": number,
+  "matchedSkills": string[],
+  "missingSkills": string[],
+  "strongAreas": string[],
+  "gaps": string[],
+  "summary": string
+}
+score (0-100): overlap between JD required skills and resume-backed skills; penalize missing must-haves.`;
+
+  const user = `JOB DESCRIPTION AND REQUIREMENTS:
+${input.jobDescription}
+
+CANDIDATE RESUME JSON:
+${JSON.stringify(input.resume, null, 2)}`;
+
+  return [
+    { role: "system" as const, content: system },
+    { role: "user" as const, content: user },
+  ];
+}
+
 export function buildAtsMessages(input: {
   resume: ResumeData;
   jobDescription: string;

@@ -19,6 +19,9 @@ type ResumeSource = {
 
 type Props = {
   leadId: string;
+  /** Override POST URL (e.g. job applications ATS). */
+  atsPostUrl?: string;
+  title?: string;
   initialScore?: number | null;
   initialAnalysis?: AtsAnalysis | null;
   onScored?: (score: number, analysis: AtsAnalysis) => void;
@@ -90,6 +93,8 @@ function sourceLabel(source: ResumeSource | null) {
 
 export function UpworkAtsCard({
   leadId,
+  atsPostUrl,
+  title = "ATS score vs this job",
   initialScore = null,
   initialAnalysis = null,
   onScored,
@@ -107,11 +112,19 @@ export function UpworkAtsCard({
     setError(null);
     setMeta(null);
     try {
-      const res = await fetch(`/api/upwork/leads/${leadId}/ats`, { method: "POST" });
+      const res = await fetch(
+        atsPostUrl ?? `/api/upwork/leads/${leadId}/ats`,
+        { method: "POST" },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "ATS failed");
       setAts(data.analysis);
-      setScore(data.lead?.atsScore ?? data.analysis?.score ?? null);
+      setScore(
+        data.lead?.atsScore ??
+          data.application?.atsScore ??
+          data.analysis?.score ??
+          null,
+      );
       setSource(data.resumeSource ?? null);
       setMeta(`Scored with ${data.provider} (${data.model}) · ${data.mode} mode`);
       setExpanded(true);
@@ -130,6 +143,7 @@ export function UpworkAtsCard({
   return (
     <section className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-[var(--shadow)]">
       <AtsCardHeader
+        title={title}
         hasDetails={Boolean(hasDetails)}
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
@@ -214,6 +228,7 @@ export function UpworkAtsCard({
 }
 
 function AtsCardHeader({
+  title,
   hasDetails,
   expanded,
   onToggle,
@@ -222,6 +237,7 @@ function AtsCardHeader({
   onRun,
   gapPreview,
 }: {
+  title: string;
   hasDetails: boolean;
   expanded: boolean;
   onToggle: () => void;
@@ -247,14 +263,10 @@ function AtsCardHeader({
               >
                 ▶
               </span>
-              <h2 className="text-base font-semibold text-[var(--ink)] sm:text-lg">
-                ATS score vs this job
-              </h2>
+              <h2 className="text-base font-semibold text-[var(--ink)] sm:text-lg">{title}</h2>
             </button>
           ) : (
-            <h2 className="text-base font-semibold text-[var(--ink)] sm:text-lg">
-              ATS score vs this job
-            </h2>
+            <h2 className="text-base font-semibold text-[var(--ink)] sm:text-lg">{title}</h2>
           )}
           {hasDetails && displayScore != null ? <ScoreRing score={displayScore} compact /> : null}
         </div>
