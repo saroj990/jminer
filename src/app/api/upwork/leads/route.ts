@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUserId } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { leadFromParsed, serializeLead } from "@/lib/upwork-db";
+import { isDuplicateUpworkLead } from "@/lib/upwork-duplicate";
 import { parsedUpworkJobSchema, upworkLeadInputSchema } from "@/types/upwork-lead";
 
 export async function GET() {
@@ -21,14 +22,19 @@ export async function GET() {
   }
 }
 
-const createSchema = upworkLeadInputSchema.or(
-  z.object({ parsed: parsedUpworkJobSchema }),
-);
+const createSchema = z.union([
+  upworkLeadInputSchema.extend({ allowDuplicate: z.boolean().optional() }),
+  z.object({
+    parsed: parsedUpworkJobSchema,
+    allowDuplicate: z.boolean().optional(),
+  }),
+]);
 
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId();
     const body = createSchema.parse(await request.json());
+    const allowDuplicate = body.allowDuplicate === true;
 
     const data =
       "parsed" in body
@@ -58,6 +64,40 @@ export async function POST(request: Request) {
           [c.location, c.industry].filter(Boolean).join(" · ") || "Unknown client";
       } catch {
         data.clientName = "Unknown client";
+      }
+    }
+
+    if (!allowDuplicate) {
+      const existing = await prisma.upworkJobLead.findMany({
+        where: { userId },
+        select: { id: true, title: true, clientName: true, postedAtText: true },
+      });
+      const duplicate = existing.find((row) =>
+        isDuplicateUpworkLead(
+          {
+            title: data.title,
+            clientName: data.clientName,
+            postedAtText: data.postedAtText,
+          },
+          row,
+        ),
+      );
+      if (duplicate) {
+        return NextResponse.json(
+          {
+            error:
+              "This job looks like a duplicate (same title, client, and posted time).",
+            duplicate: true,
+            existingLeadId: duplicate.id,
+            existingLead: {
+              id: duplicate.id,
+              title: duplicate.title,
+              clientName: duplicate.clientName,
+              postedAtText: duplicate.postedAtText,
+            },
+          },
+          { status: 409 },
+        );
       }
     }
 

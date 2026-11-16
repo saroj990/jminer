@@ -34,6 +34,13 @@ export default function UpworkLeadsPage() {
   const [parsed, setParsed] = useState<ParsedUpworkJob | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [parsePhase, setParsePhase] = useState<"ocr" | "ai" | null>(null);
+  const [duplicateExisting, setDuplicateExisting] = useState<{
+    id: string;
+    title: string;
+    clientName: string;
+    postedAtText: string;
+  } | null>(null);
+
   const load = useCallback(() => {
     setLoading(true);
     fetch("/api/upwork/leads")
@@ -55,6 +62,7 @@ export default function UpworkLeadsPage() {
     setParsing(true);
     setParseError(null);
     setParsed(null);
+    setDuplicateExisting(null);
     try {
       const picked = Array.from(files).slice(0, 3);
       setParsePhase("ocr");
@@ -81,19 +89,26 @@ export default function UpworkLeadsPage() {
     }
   };
 
-  const saveParsed = async () => {
+  const saveParsed = async (allowDuplicate = false) => {
     if (!parsed) return;
     setSaving(true);
-    setError(null);
+    if (!allowDuplicate) setError(null);
     try {
       const res = await fetch("/api/upwork/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parsed }),
+        body: JSON.stringify({ parsed, allowDuplicate }),
       });
       const data = await res.json();
+      if (res.status === 409 && data.duplicate) {
+        setDuplicateExisting(data.existingLead);
+        setParseError(data.error);
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Save failed");
       setParsed(null);
+      setDuplicateExisting(null);
+      setParseError(null);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -163,11 +178,40 @@ export default function UpworkLeadsPage() {
                 Skills: {parsed.techStack.join(", ")}
               </p>
             ) : null}
+            {duplicateExisting ? (
+              <div
+                className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-[var(--ink)]"
+                role="alert"
+              >
+                <p className="font-semibold">Duplicate job</p>
+                <p className="mt-1 text-[var(--ink-muted)]">
+                  A lead already exists for this title, client, and posted time.{" "}
+                  <Link
+                    href={`/upwork/${duplicateExisting.id}`}
+                    className="font-semibold text-[var(--accent)] hover:underline"
+                  >
+                    View existing
+                  </Link>
+                </p>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2">
-              <Button onClick={saveParsed} disabled={saving}>
+              <Button onClick={() => saveParsed(false)} disabled={saving}>
                 {saving ? "Saving…" : "Save to list"}
               </Button>
-              <Button variant="secondary" onClick={() => setParsed(null)}>
+              {duplicateExisting ? (
+                <Button variant="secondary" onClick={() => saveParsed(true)} disabled={saving}>
+                  Save anyway
+                </Button>
+              ) : null}
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setParsed(null);
+                  setDuplicateExisting(null);
+                  setParseError(null);
+                }}
+              >
                 Discard
               </Button>
             </div>
