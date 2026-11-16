@@ -37,10 +37,10 @@ function parseValue(value: string): { year: string; month: string } {
 }
 
 const triggerClass =
-  "flex h-10 w-full items-center justify-between rounded-lg border border-[var(--line)] bg-white px-3 text-left text-sm text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] disabled:cursor-not-allowed disabled:bg-[var(--panel-muted)] disabled:opacity-60";
+  "flex h-10 w-full items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-left text-sm text-[var(--ink)] shadow-[var(--input-inset)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] disabled:cursor-not-allowed disabled:bg-[var(--panel-muted)] disabled:opacity-60";
 
 const selectClass =
-  "h-10 w-full rounded-lg border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] disabled:cursor-not-allowed disabled:bg-[var(--panel-muted)] disabled:opacity-60";
+  "h-10 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm text-[var(--ink)] shadow-[var(--input-inset)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] disabled:cursor-not-allowed disabled:bg-[var(--panel-muted)] disabled:opacity-60";
 
 export function MonthYearPicker({
   label,
@@ -163,7 +163,7 @@ export function MonthYearPicker({
               ref={yearListRef}
               role="listbox"
               aria-label={`${label} year options`}
-              className="absolute z-30 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-[var(--line)] bg-white py-1 shadow-[0_12px_30px_-18px_rgba(16,40,36,0.55)]"
+              className="absolute z-30 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--panel)] py-1 shadow-[0_12px_30px_-18px_rgba(16,40,36,0.55)]"
             >
               {allowEmpty ? (
                 <li role="option" aria-selected={!year}>

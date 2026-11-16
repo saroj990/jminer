@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, type ReactNode } from "react";
-import { formatDateRange } from "@/lib/format";
+import { formatDateRange, splitBulletLines } from "@/lib/format";
 import type { ResumeData } from "@/types/resume";
 
 type Props = {
@@ -72,7 +72,7 @@ export const ResumePreview = memo(function ResumePreview({ resume }: Props) {
                       {item.company ? (
                         <span className="font-normal text-[#3d5c57]">
                           {" "}
-                          · {item.company}
+                          ({item.company})
                         </span>
                       ) : null}
                     </p>
@@ -83,13 +83,9 @@ export const ResumePreview = memo(function ResumePreview({ resume }: Props) {
                   </div>
                   {item.description.trim() ? (
                     <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-[#243f3b]">
-                      {item.description
-                        .split("\n")
-                        .map((line) => line.trim())
-                        .filter(Boolean)
-                        .map((line) => (
-                          <li key={line}>{line}</li>
-                        ))}
+                      {splitBulletLines(item.description).map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
                     </ul>
                   ) : null}
                 </div>
@@ -166,10 +162,14 @@ export const ResumePreview = memo(function ResumePreview({ resume }: Props) {
                     ) : null}
                   </p>
                   {item.description.trim() ? (
-                    <p className="mt-0.5 text-[#243f3b]">{item.description}</p>
+                    <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-[#243f3b]">
+                      {splitBulletLines(item.description).map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
+                    </ul>
                   ) : null}
                   {item.technologies.trim() ? (
-                    <p className="mt-0.5 text-[0.8rem] text-[#5a736e]">
+                    <p className="mt-1 text-[0.8rem] text-[#5a736e]">
                       {item.technologies}
                     </p>
                   ) : null}

@@ -72,7 +72,7 @@ export default function DashboardPage() {
         ].map(([label, value]) => (
           <div
             key={String(label)}
-            className="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-[var(--shadow)]"
+            className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[var(--shadow)]"
           >
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
               {label}
@@ -84,7 +84,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <section className="mt-8 rounded-2xl border border-[var(--line)] bg-white p-5 shadow-[var(--shadow)]">
+      <section className="mt-8 rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[var(--shadow)]">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]">
           Recent activity
         </h2>

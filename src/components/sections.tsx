@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { MonthYearPicker } from "@/components/month-year-picker";
-import { AddButton, EntryCard, SectionCard, TextArea, TextField } from "@/components/ui";
+import { AddButton, Button, EntryCard, SectionCard, TextArea, TextField } from "@/components/ui";
 import { WriteWithAiButton } from "@/components/write-with-ai-button";
+import { formatDateRange } from "@/lib/format";
 import { useResumeStore } from "@/store/resume-store";
+import type { PortfolioItem, WorkExperience } from "@/types/resume";
 
 export function PersonalSection() {
   const personal = useResumeStore((s) => s.resume.personal);
@@ -101,92 +104,216 @@ export function ExperienceSection() {
   const addExperience = useResumeStore((s) => s.addExperience);
   const updateExperience = useResumeStore((s) => s.updateExperience);
   const removeExperience = useResumeStore((s) => s.removeExperience);
+  const reorderExperiences = useResumeStore((s) => s.reorderExperiences);
+
+  const [reorderMode, setReorderMode] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  const exitReorder = () => {
+    setReorderMode(false);
+    setDragIndex(null);
+    setOverIndex(null);
+  };
 
   return (
     <SectionCard
       title="Work experience"
-      description="Roles, impact, and outcomes. One bullet per line."
-      action={<AddButton onClick={addExperience} label="+ Add role" />}
+      description={
+        reorderMode
+          ? "Drag cards to change order. Latest role should stay at the top."
+          : "Roles, impact, and outcomes. One bullet per line."
+      }
+      action={
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            variant={reorderMode ? "primary" : "secondary"}
+            onClick={() => (reorderMode ? exitReorder() : setReorderMode(true))}
+            disabled={experiences.length < 2 && !reorderMode}
+          >
+            {reorderMode ? "Done" : "Re-order Experience"}
+          </Button>
+          {!reorderMode ? (
+            <AddButton onClick={addExperience} label="+ Add role" />
+          ) : null}
+        </div>
+      }
     >
-      {experiences.map((item, index) => (
-        <EntryCard
-          key={item.id}
-          title={`Role ${index + 1}`}
-          onRemove={
-            experiences.length > 1 ? () => removeExperience(item.id) : undefined
-          }
-        >
-          <TextField
-            label="Job title"
-            value={item.role}
-            onChange={(e) => updateExperience(item.id, { role: e.target.value })}
-          />
-          <TextField
-            label="Company"
-            value={item.company}
-            onChange={(e) =>
-              updateExperience(item.id, { company: e.target.value })
-            }
-          />
-          <TextField
-            label="Location"
-            value={item.location}
-            onChange={(e) =>
-              updateExperience(item.id, { location: e.target.value })
-            }
-          />
-          <div className="flex items-end gap-3">
-            <label className="mb-2 flex items-center gap-2 text-sm text-[var(--ink)]">
-              <input
-                type="checkbox"
-                checked={item.current}
-                onChange={(e) =>
-                  updateExperience(item.id, {
-                    current: e.target.checked,
-                    endDate: e.target.checked ? "" : item.endDate,
-                  })
+      {reorderMode ? (
+        <ul className="space-y-2">
+          {experiences.map((item, index) => (
+            <ExperienceReorderCard
+              key={item.id}
+              item={item}
+              index={index}
+              dragging={dragIndex === index}
+              dragOver={overIndex === index && dragIndex !== index}
+              onDragStart={() => setDragIndex(index)}
+              onDragOver={() => setOverIndex(index)}
+              onDrop={() => {
+                if (dragIndex !== null && dragIndex !== index) {
+                  reorderExperiences(dragIndex, index);
                 }
-                className="accent-[var(--accent)]"
-              />
-              Current role
-            </label>
-          </div>
-          <MonthYearPicker
-            label="Start date"
-            value={item.startDate}
-            onChange={(value) => updateExperience(item.id, { startDate: value })}
-            hint="Month and year"
-          />
-          <MonthYearPicker
-            label="End date"
-            value={item.endDate}
-            disabled={item.current}
-            onChange={(value) => updateExperience(item.id, { endDate: value })}
-            hint={item.current ? "Hidden while current role is checked" : "Month and year"}
-          />
-          <TextArea
-            label="Highlights"
-            hint="One achievement per line"
-            value={item.description}
-            onChange={(e) =>
-              updateExperience(item.id, { description: e.target.value })
-            }
-            className="sm:col-span-2"
-            rows={4}
-          />
-          <div className="sm:col-span-2">
-            <WriteWithAiButton
-              fieldType="experience_bullets"
-              value={item.description}
-              onApply={(text) =>
-                updateExperience(item.id, { description: text })
-              }
-              context={`Role: ${item.role || "n/a"}; Company: ${item.company || "n/a"}; Location: ${item.location || "n/a"}`}
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
             />
-          </div>
-        </EntryCard>
-      ))}
+          ))}
+        </ul>
+      ) : (
+        experiences.map((item, index) => (
+          <EntryCard
+            key={item.id}
+            title={`Role ${index + 1}`}
+            onRemove={
+              experiences.length > 1 ? () => removeExperience(item.id) : undefined
+            }
+          >
+            <TextField
+              label="Job title"
+              value={item.role}
+              onChange={(e) => updateExperience(item.id, { role: e.target.value })}
+            />
+            <TextField
+              label="Company"
+              value={item.company}
+              onChange={(e) =>
+                updateExperience(item.id, { company: e.target.value })
+              }
+            />
+            <TextField
+              label="Location"
+              value={item.location}
+              onChange={(e) =>
+                updateExperience(item.id, { location: e.target.value })
+              }
+            />
+            <div className="flex items-end gap-3">
+              <label className="mb-2 flex items-center gap-2 text-sm text-[var(--ink)]">
+                <input
+                  type="checkbox"
+                  checked={item.current}
+                  onChange={(e) =>
+                    updateExperience(item.id, {
+                      current: e.target.checked,
+                      endDate: e.target.checked ? "" : item.endDate,
+                    })
+                  }
+                  className="accent-[var(--accent)]"
+                />
+                Current role
+              </label>
+            </div>
+            <MonthYearPicker
+              label="Start date"
+              value={item.startDate}
+              onChange={(value) => updateExperience(item.id, { startDate: value })}
+              hint="Month and year"
+            />
+            <MonthYearPicker
+              label="End date"
+              value={item.endDate}
+              disabled={item.current}
+              onChange={(value) => updateExperience(item.id, { endDate: value })}
+              hint={item.current ? "Hidden while current role is checked" : "Month and year"}
+            />
+            <TextArea
+              label="Highlights"
+              hint="One achievement per line"
+              value={item.description}
+              onChange={(e) =>
+                updateExperience(item.id, { description: e.target.value })
+              }
+              className="sm:col-span-2"
+              rows={4}
+            />
+            <div className="sm:col-span-2">
+              <WriteWithAiButton
+                fieldType="experience_bullets"
+                value={item.description}
+                onApply={(text) =>
+                  updateExperience(item.id, { description: text })
+                }
+                context={`Role: ${item.role || "n/a"}; Company: ${item.company || "n/a"}; Location: ${item.location || "n/a"}`}
+              />
+            </div>
+          </EntryCard>
+        ))
+      )}
     </SectionCard>
+  );
+}
+
+function ExperienceReorderCard({
+  item,
+  index,
+  dragging,
+  dragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}: {
+  item: WorkExperience;
+  index: number;
+  dragging: boolean;
+  dragOver: boolean;
+  onDragStart: () => void;
+  onDragOver: () => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
+}) {
+  const title = item.role.trim() || `Role ${index + 1}`;
+  const company = item.company.trim() || "Company not set";
+  const dates =
+    formatDateRange(item.startDate, item.endDate, item.current) || "Dates not set";
+
+  return (
+    <li
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", String(index));
+        onDragStart();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        onDragOver();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+      onDragEnd={onDragEnd}
+      className={`flex cursor-grab items-center gap-3 rounded-xl border bg-[var(--panel)] px-3 py-3 active:cursor-grabbing ${
+        dragging
+          ? "border-[var(--accent)] opacity-55 shadow-[var(--shadow)]"
+          : dragOver
+            ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+            : "border-[var(--line)]"
+      }`}
+    >
+      <span
+        aria-hidden
+        className="select-none text-[var(--ink-muted)]"
+        title="Drag to reorder"
+      >
+        ⋮⋮
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-[var(--ink)]">{title}</p>
+        <p className="truncate text-xs text-[var(--ink-muted)]">
+          {company}
+          {item.current ? " · Current" : ""}
+        </p>
+        <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{dates}</p>
+      </div>
+    </li>
   );
 }
 
@@ -316,61 +443,181 @@ export function PortfolioSection() {
   const addPortfolio = useResumeStore((s) => s.addPortfolio);
   const updatePortfolio = useResumeStore((s) => s.updatePortfolio);
   const removePortfolio = useResumeStore((s) => s.removePortfolio);
+  const reorderPortfolio = useResumeStore((s) => s.reorderPortfolio);
+
+  const [reorderMode, setReorderMode] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  const exitReorder = () => {
+    setReorderMode(false);
+    setDragIndex(null);
+    setOverIndex(null);
+  };
 
   return (
     <SectionCard
       title="Portfolio"
-      description="Projects, case studies, and links that show your work."
-      action={<AddButton onClick={addPortfolio} label="+ Add project" />}
+      description={
+        reorderMode
+          ? "Drag cards to change project order on your resume."
+          : "Projects, case studies, and links that show your work."
+      }
+      action={
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            variant={reorderMode ? "primary" : "secondary"}
+            onClick={() => (reorderMode ? exitReorder() : setReorderMode(true))}
+            disabled={portfolio.length < 2 && !reorderMode}
+          >
+            {reorderMode ? "Done" : "Re-order projects"}
+          </Button>
+          {!reorderMode ? (
+            <AddButton onClick={addPortfolio} label="+ Add project" />
+          ) : null}
+        </div>
+      }
     >
-      {portfolio.map((item, index) => (
-        <EntryCard
-          key={item.id}
-          title={`Project ${index + 1}`}
-          onRemove={
-            portfolio.length > 1 ? () => removePortfolio(item.id) : undefined
-          }
-        >
-          <TextField
-            label="Project name"
-            value={item.name}
-            onChange={(e) => updatePortfolio(item.id, { name: e.target.value })}
-          />
-          <TextField
-            label="URL"
-            value={item.url}
-            onChange={(e) => updatePortfolio(item.id, { url: e.target.value })}
-            placeholder="https://"
-          />
-          <TextArea
-            label="Description"
-            value={item.description}
-            onChange={(e) =>
-              updatePortfolio(item.id, { description: e.target.value })
-            }
-            className="sm:col-span-2"
-            rows={3}
-          />
-          <div className="sm:col-span-2">
-            <WriteWithAiButton
-              fieldType="portfolio_description"
-              value={item.description}
-              onApply={(text) =>
-                updatePortfolio(item.id, { description: text })
-              }
-              context={`Project: ${item.name || "n/a"}; Technologies: ${item.technologies || "n/a"}; URL: ${item.url || "n/a"}`}
+      {reorderMode ? (
+        <ul className="space-y-2">
+          {portfolio.map((item, index) => (
+            <PortfolioReorderCard
+              key={item.id}
+              item={item}
+              index={index}
+              dragging={dragIndex === index}
+              dragOver={overIndex === index && dragIndex !== index}
+              onDragStart={() => setDragIndex(index)}
+              onDragOver={() => setOverIndex(index)}
+              onDrop={() => {
+                if (dragIndex !== null && dragIndex !== index) {
+                  reorderPortfolio(dragIndex, index);
+                }
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
             />
-          </div>
-          <TextField
-            label="Technologies"
-            value={item.technologies}
-            onChange={(e) =>
-              updatePortfolio(item.id, { technologies: e.target.value })
+          ))}
+        </ul>
+      ) : (
+        portfolio.map((item, index) => (
+          <EntryCard
+            key={item.id}
+            title={`Project ${index + 1}`}
+            onRemove={
+              portfolio.length > 1 ? () => removePortfolio(item.id) : undefined
             }
-            className="sm:col-span-2"
-          />
-        </EntryCard>
-      ))}
+          >
+            <TextField
+              label="Project name"
+              value={item.name}
+              onChange={(e) => updatePortfolio(item.id, { name: e.target.value })}
+            />
+            <TextField
+              label="URL"
+              value={item.url}
+              onChange={(e) => updatePortfolio(item.id, { url: e.target.value })}
+              placeholder="https://"
+            />
+            <TextArea
+              label="Description"
+              value={item.description}
+              onChange={(e) =>
+                updatePortfolio(item.id, { description: e.target.value })
+              }
+              className="sm:col-span-2"
+              rows={3}
+            />
+            <div className="sm:col-span-2">
+              <WriteWithAiButton
+                fieldType="portfolio_description"
+                value={item.description}
+                onApply={(text) =>
+                  updatePortfolio(item.id, { description: text })
+                }
+                context={`Project: ${item.name || "n/a"}; Technologies: ${item.technologies || "n/a"}; URL: ${item.url || "n/a"}`}
+              />
+            </div>
+            <TextField
+              label="Technologies"
+              value={item.technologies}
+              onChange={(e) =>
+                updatePortfolio(item.id, { technologies: e.target.value })
+              }
+              className="sm:col-span-2"
+            />
+          </EntryCard>
+        ))
+      )}
     </SectionCard>
+  );
+}
+
+function PortfolioReorderCard({
+  item,
+  index,
+  dragging,
+  dragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}: {
+  item: PortfolioItem;
+  index: number;
+  dragging: boolean;
+  dragOver: boolean;
+  onDragStart: () => void;
+  onDragOver: () => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
+}) {
+  const title = item.name.trim() || `Project ${index + 1}`;
+  const url = item.url.trim() || "No URL";
+  const tech = item.technologies.trim() || "Technologies not set";
+
+  return (
+    <li
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", String(index));
+        onDragStart();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        onDragOver();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+      onDragEnd={onDragEnd}
+      className={`flex cursor-grab items-center gap-3 rounded-xl border bg-[var(--panel)] px-3 py-3 active:cursor-grabbing ${
+        dragging
+          ? "border-[var(--accent)] opacity-55 shadow-[var(--shadow)]"
+          : dragOver
+            ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+            : "border-[var(--line)]"
+      }`}
+    >
+      <span
+        aria-hidden
+        className="select-none text-[var(--ink-muted)]"
+        title="Drag to reorder"
+      >
+        ⋮⋮
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-[var(--ink)]">{title}</p>
+        <p className="truncate text-xs text-[var(--ink-muted)]">{url}</p>
+        <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{tech}</p>
+      </div>
+    </li>
   );
 }

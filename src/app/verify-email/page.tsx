@@ -47,7 +47,7 @@ function VerifyContent() {
       >
         port<span className="text-[var(--accent)]">Folio</span>
       </Link>
-      <div className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-[var(--shadow)]">
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6 shadow-[var(--shadow)]">
         <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-[var(--ink)]">
           {status === "ok"
             ? "Email verified"

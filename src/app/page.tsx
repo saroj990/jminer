@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function HomePage() {
   const session = await auth();
@@ -13,7 +14,8 @@ export default async function HomePage() {
           <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)]">
             port<span className="text-[var(--accent)]">Folio</span>
           </p>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
+            <ThemeToggle compact />
             <Link
               href="/login"
               className="rounded-lg px-3 py-2 text-sm font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]"
@@ -49,7 +51,7 @@ export default async function HomePage() {
             </Link>
             <Link
               href="/builder"
-              className="rounded-lg border border-[var(--line)] bg-white px-5 py-3 text-sm font-semibold text-[var(--ink)]"
+              className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-5 py-3 text-sm font-semibold text-[var(--ink)]"
             >
               Try guest builder
             </Link>
@@ -64,7 +66,7 @@ export default async function HomePage() {
           ].map(([title, body]) => (
             <div
               key={title}
-              className="rounded-2xl border border-[var(--line)] bg-white/80 p-5 shadow-[var(--shadow)]"
+              className="rounded-2xl border border-[var(--line)] bg-[var(--panel)]/80 p-5 shadow-[var(--shadow)]"
             >
               <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--ink)]">
                 {title}

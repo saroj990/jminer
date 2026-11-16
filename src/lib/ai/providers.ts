@@ -161,7 +161,12 @@ export async function generateWithOllama(
         model,
         messages,
         stream: false,
-        options: { temperature: 0.4 },
+        format: "json",
+        keep_alive: "15m",
+        options: {
+          temperature: 0.1,
+          num_predict: 4096,
+        },
       },
       {},
     );

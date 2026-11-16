@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { AiAssistantPanel } from "@/components/ai-assistant-panel";
 import { ImportResumeDialog } from "@/components/import-resume-dialog";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   EducationSection,
   ExperienceSection,
@@ -18,7 +19,6 @@ import { Button } from "@/components/ui";
 import type { ResumeData } from "@/types/resume";
 import { exportResumeToDocx } from "@/lib/export-docx";
 import { exportResumeToPdf } from "@/lib/export-pdf";
-import { TEMPLATES, type TemplateId } from "@/lib/templates";
 import { useResumeStore } from "@/store/resume-store";
 
 const SECTIONS = [
@@ -45,23 +45,16 @@ export function ResumeBuilder() {
   const [hydrated, setHydrated] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>("personal");
   const [mobilePane, setMobilePane] = useState<MobilePane>("edit");
-  const [template, setTemplate] = useState<TemplateId>("classic");
   const [syncing, setSyncing] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(false);
 
   useEffect(() => {
     setHydrated(true);
   }, []);
 
-  useEffect(() => {
-    if (status !== "authenticated") return;
-    fetch("/api/profile")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.resumeData) replaceResume(data.resumeData);
-      })
-      .catch(() => undefined);
-  }, [status, replaceResume]);
+  // Do not auto-load master profile into the editor — keep local draft until
+  // the user explicitly Saves (or Loads profile from the Load dialog).
 
   const handlePdf = async () => {
     const resume = useResumeStore.getState().resume;
@@ -125,11 +118,12 @@ export function ResumeBuilder() {
         body: JSON.stringify({ resume }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Sync failed");
+      if (!res.ok) throw new Error(data.error || "Save failed");
       if (data.resumeData) replaceResume(data.resumeData);
-      setMessage("Synced to master profile.");
+      setDraftDirty(false);
+      setMessage("Saved to master profile.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sync failed");
+      setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSyncing(false);
     }
@@ -137,8 +131,11 @@ export function ResumeBuilder() {
 
   const handleImported = (data: ResumeData, sourceLabel: string) => {
     replaceResume(data);
+    setDraftDirty(true);
     setError(null);
-    setMessage(sourceLabel);
+    setMessage(
+      `${sourceLabel}. Draft only — click Save to profile when you’re ready.`,
+    );
   };
 
   return (
@@ -148,7 +145,7 @@ export function ResumeBuilder() {
         onClose={() => setImportOpen(false)}
         onLoaded={handleImported}
       />
-      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--canvas)_82%,white)]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--header-bg)]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="min-w-0">
             <Link
@@ -158,36 +155,34 @@ export function ResumeBuilder() {
               port<span className="text-[var(--accent)]">Folio</span>
             </Link>
             <p className="mt-1 truncate text-xs text-[var(--ink-muted)] sm:text-sm">
-              Master profile · Templates · AI · Export
+              {draftDirty
+                ? "Unsaved draft · Save to profile when ready"
+                : "Master profile · AI · Export"}
             </p>
           </div>
 
           <div className="hidden items-center gap-2 lg:flex">
-            <select
-              className="h-10 rounded-lg border border-[var(--line)] bg-white px-3 text-sm"
-              value={template}
-              onChange={(e) => setTemplate(e.target.value as TemplateId)}
-              title="Template"
-            >
-              {TEMPLATES.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
+            <ThemeToggle compact />
             <Button variant="ghost" onClick={() => setImportOpen(true)}>
               Load
             </Button>
             {status === "authenticated" ? (
               <Button variant="ghost" onClick={syncToProfile} disabled={syncing}>
-                {syncing ? "Syncing…" : "Sync"}
+                {syncing ? "Saving…" : "Save to profile"}
               </Button>
             ) : (
               <Link href="/login">
                 <Button variant="ghost">Sign in</Button>
               </Link>
             )}
-            <Button variant="ghost" onClick={loadSample}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                loadSample();
+                setDraftDirty(true);
+                setMessage("Sample loaded as draft — Save to profile when ready.");
+              }}
+            >
               Sample
             </Button>
             <Button onClick={handleJson} disabled={!!exporting}>
@@ -202,6 +197,7 @@ export function ResumeBuilder() {
           </div>
 
           <div className="flex items-center gap-2 lg:hidden">
+            <ThemeToggle compact />
             <Button onClick={() => setImportOpen(true)}>Load</Button>
             <Button variant="primary" onClick={handlePdf} disabled={!!exporting}>
               PDF
@@ -232,7 +228,7 @@ export function ResumeBuilder() {
           </Button>
           {status === "authenticated" ? (
             <Button onClick={syncToProfile} disabled={syncing} className="shrink-0">
-              Sync
+              {syncing ? "Saving…" : "Save"}
             </Button>
           ) : (
             <Link href="/login" className="shrink-0">
@@ -242,7 +238,7 @@ export function ResumeBuilder() {
         </div>
 
         {error ? (
-          <p className="border-t border-red-200 bg-red-50 px-4 py-2 text-center text-sm text-red-700">
+          <p className="border-t border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-2 text-center text-sm text-[var(--danger)]">
             {error}
           </p>
         ) : null}
@@ -254,7 +250,7 @@ export function ResumeBuilder() {
       </header>
 
       <div className="mx-auto grid w-full max-w-[1440px] flex-1 gap-0 lg:grid-cols-[220px_minmax(0,1fr)_minmax(360px,0.95fr)]">
-        <nav className="hidden border-r border-[var(--line)] bg-white/40 p-4 lg:block">
+        <nav className="hidden border-r border-[var(--line)] bg-[var(--panel)]/40 p-4 lg:block">
           <p className="mb-3 px-2 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             Sections
           </p>
@@ -269,7 +265,7 @@ export function ResumeBuilder() {
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
                       active
                         ? "bg-[var(--accent)] text-white shadow-[0_10px_24px_-14px_rgba(31,122,108,0.9)]"
-                        : "text-[var(--ink-soft)] hover:bg-white hover:text-[var(--ink)]"
+                        : "text-[var(--ink-soft)] hover:bg-[var(--panel)] hover:text-[var(--ink)]"
                     }`}
                   >
                     <span
@@ -315,7 +311,7 @@ export function ResumeBuilder() {
                   className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
                     active
                       ? "bg-[var(--accent)] text-white"
-                      : "bg-white text-[var(--ink-muted)] ring-1 ring-[var(--line)]"
+                      : "bg-[var(--panel)] text-[var(--ink-muted)] ring-1 ring-[var(--line)]"
                   }`}
                 >
                   {section.label}
@@ -366,7 +362,7 @@ export function ResumeBuilder() {
           <div className="mb-4 flex items-end justify-between gap-3">
             <div>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-                Preview · {TEMPLATES.find((t) => t.id === template)?.label}
+                Preview
               </p>
               <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]">
                 Live resume
@@ -377,16 +373,11 @@ export function ResumeBuilder() {
             </Button>
           </div>
 
-          <div
-            className={`rounded-2xl border border-white/50 bg-[var(--preview-bg)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] sm:p-4 ${
-              template === "minimal" ? "opacity-95" : ""
-            }`}
-            data-template={template}
-          >
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--preview-bg)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-4">
             {hydrated ? (
               <LiveResumePreview />
             ) : (
-              <div className="flex h-[11in] items-center justify-center rounded-xl bg-white text-sm text-[var(--ink-muted)]">
+              <div className="flex h-[11in] items-center justify-center rounded-xl bg-[var(--panel)] text-sm text-[var(--ink-muted)]">
                 Loading preview…
               </div>
             )}

@@ -19,6 +19,7 @@ model User {
   resumes       Resume[]
   preferences   UserPreferences?
   emailTokens   EmailVerificationToken[]
+  upworkLeads   UpworkJobLead[]
 }
 
 model EmailVerificationToken {
@@ -212,6 +213,34 @@ model Resume {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   versions    ResumeVersion[]
+}
+
+model UpworkJobLead {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String    @default("")
+  jobUrl           String    @default("")
+  postedAtText     String    @default("")
+  description      String    @default("")
+  /// JSON string array of skill tags
+  techStackJson    String    @default("[]")
+  connectsRequired Int?
+  hourlyRateText   String    @default("")
+  durationText     String    @default("")
+  experienceLevel  String    @default("")
+  projectType      String    @default("")
+  clientName       String    @default("")
+  clientInfoJson   String    @default("{}")
+  activityJson     String    @default("{}")
+  engagementScore  Int?
+  genuinenessScore Int?
+  aiAnalysisJson   String    @default("{}")
+  analyzedAt       DateTime?
+  notes            String    @default("")
+  status           String    @default("interested")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model ResumeVersion {

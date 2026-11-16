@@ -77,7 +77,7 @@ export default function ResumesPage() {
         </h1>
       </div>
 
-      <section className="mb-6 rounded-2xl border border-[var(--line)] bg-white p-5 shadow-[var(--shadow)]">
+      <section className="mb-6 rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[var(--shadow)]">
         <h2 className="font-semibold text-[var(--ink)]">Create resume</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_180px_auto]">
           <TextField
@@ -91,7 +91,7 @@ export default function ResumesPage() {
               Template
             </span>
             <select
-              className="h-10 rounded-lg border border-[var(--line)] bg-white px-3 text-sm"
+              className="h-10 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm"
               value={template}
               onChange={(e) => setTemplate(e.target.value)}
             >
@@ -115,7 +115,7 @@ export default function ResumesPage() {
         {resumes.map((resume) => (
           <div
             key={resume.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--line)] bg-white p-5 shadow-[var(--shadow)]"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[var(--shadow)]"
           >
             <div>
               <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]">

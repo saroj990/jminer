@@ -25,3 +25,49 @@ export function slugifyFilename(name: string): string {
     .replace(/^-|-$/g, "");
   return cleaned || "resume";
 }
+
+/** Strip common list markers from the start of a line. */
+export function cleanBulletLine(line: string): string {
+  return line
+    .replace(/^([•·●▪◦‣➢★☆]|[-*–—]|\d+[.)])\s+/, "")
+    .trim();
+}
+
+/**
+ * Split resume bullets that may be newline-separated OR jammed onto one
+ * line with inline "•" markers (common after AI/local parse).
+ */
+export function splitBulletLines(text: string): string[] {
+  if (!text?.trim()) return [];
+
+  const parts = text
+    .replace(/\r\n/g, "\n")
+    .split(/\n+/)
+    .flatMap((line) =>
+      // Keep content before the first marker; split on subsequent markers
+      line.split(/\s*[•●▪◦·‣]\s+/),
+    )
+    .map(cleanBulletLine)
+    .filter(Boolean);
+
+  // Deduplicate consecutive identical lines
+  return parts.filter((line, index) => index === 0 || line !== parts[index - 1]);
+}
+
+/** Rewrite experience/portfolio descriptions so inline "•" become real newlines. */
+export function normalizeResumeBulletFields<T extends {
+  experiences: { description: string }[];
+  portfolio: { description: string }[];
+}>(resume: T): T {
+  return {
+    ...resume,
+    experiences: resume.experiences.map((item) => ({
+      ...item,
+      description: splitBulletLines(item.description).join("\n"),
+    })),
+    portfolio: resume.portfolio.map((item) => ({
+      ...item,
+      description: splitBulletLines(item.description).join("\n"),
+    })),
+  };
+}

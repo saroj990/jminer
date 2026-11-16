@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type AuthShellProps = {
   title: string;
@@ -100,6 +103,9 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
       </aside>
 
       <main className="relative flex min-h-screen flex-col justify-center px-4 py-10 sm:px-8">
+        <div className="absolute right-4 top-4 sm:right-8 sm:top-8">
+          <ThemeToggle compact />
+        </div>
         <div className="mx-auto w-full max-w-md animate-fade-up">
           <Link
             href="/"
@@ -115,7 +121,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[var(--line)] bg-white/95 p-6 shadow-[var(--shadow)] sm:p-8">
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)]/95 p-6 shadow-[var(--shadow)] sm:p-8">
             <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-[var(--ink)] sm:text-3xl">
               {title}
             </h2>

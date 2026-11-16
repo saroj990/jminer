@@ -17,6 +17,7 @@ const schema = z.object({
   ]),
   text: z.string(),
   context: z.string().optional(),
+  prompt: z.string().optional(),
   modeOverride: z.enum(["online", "local"]).optional(),
 });
 
@@ -26,9 +27,9 @@ export async function POST(request: Request) {
     const body = schema.parse(await request.json());
     const mode: AIMode = body.modeOverride ?? (await getAiMode(userId));
 
-    if (!body.text.trim() && !body.context?.trim()) {
+    if (!body.text.trim() && !body.context?.trim() && !body.prompt?.trim()) {
       return NextResponse.json(
-        { error: "Add some text or context before using Write with AI." },
+        { error: "Add some text, context, or a prompt before using Write with AI." },
         { status: 400 },
       );
     }
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
         fieldType: body.fieldType as WriteFieldType,
         text: body.text,
         context: body.context,
+        prompt: body.prompt,
       }),
     );
 

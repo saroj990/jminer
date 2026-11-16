@@ -27,7 +27,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("portfolio-theme");if(t==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full font-[family-name:var(--font-body)]">
         <Providers>{children}</Providers>
       </body>

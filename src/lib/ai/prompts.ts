@@ -97,10 +97,11 @@ export function buildWriteMessages(input: {
   fieldType: WriteFieldType;
   text: string;
   context?: string;
+  prompt?: string;
 }) {
   const fieldGuidance: Record<WriteFieldType, string> = {
     summary:
-      "Write a polished professional summary in 2-4 sentences. First person is fine but prefer concise third-person resume style without 'I'.",
+      "Write a polished professional summary in 2-4 sentences. Prefer concise resume style without 'I'.",
     experience_bullets:
       "Rewrite as strong resume bullet points. Return newline-separated bullets WITHOUT leading dashes or bullets. Keep facts truthful; improve clarity and impact.",
     education_details:
@@ -112,14 +113,16 @@ export function buildWriteMessages(input: {
   const system = `You are a professional resume writer.
 ${fieldGuidance[input.fieldType]}
 Rules:
-- Do not invent employers, schools, metrics, or skills not supported by the input.
-- Keep the candidate's meaning.
+- Follow the user's prompt when provided.
+- Do not invent employers, schools, metrics, or skills not supported by the input or prompt.
+- Keep the candidate's meaning unless the prompt asks to reframe.
 - Return ONLY valid JSON: { "text": string }`;
 
   const user = `FIELD: ${input.fieldType}
+${input.prompt?.trim() ? `USER PROMPT:\n${input.prompt.trim()}\n` : ""}
 ${input.context ? `CONTEXT:\n${input.context}\n` : ""}
 CURRENT TEXT:
-${input.text || "(empty — draft a strong starting version from context if possible)"}`;
+${input.text || "(empty — draft a strong starting version from context/prompt if possible)"}`;
 
   return [
     { role: "system" as const, content: system },
@@ -129,54 +132,65 @@ ${input.text || "(empty — draft a strong starting version from context if poss
 
 export function buildParseResumeMessages(rawText: string) {
   const system = `You convert raw resume text into structured JSON for a resume builder.
-Return ONLY valid JSON matching this schema exactly:
+Return ONLY a single JSON object. No markdown. No commentary.
+Use this exact shape (all values must be strings except current which is boolean):
 {
   "personal": {
-    "fullName": string,
-    "title": string,
-    "email": string,
-    "phone": string,
-    "location": string,
-    "website": string,
-    "linkedin": string,
-    "github": string
+    "fullName": "",
+    "title": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "website": "",
+    "linkedin": "",
+    "github": ""
   },
-  "summary": string,
+  "summary": "",
   "experiences": [{
-    "company": string,
-    "role": string,
-    "location": string,
-    "startDate": string,
-    "endDate": string,
-    "current": boolean,
-    "description": string
+    "company": "",
+    "role": "",
+    "location": "",
+    "startDate": "YYYY-MM",
+    "endDate": "YYYY-MM",
+    "current": false,
+    "description": "First achievement from the resume\\nSecond achievement from the resume\\nThird achievement from the resume"
   }],
   "education": [{
-    "school": string,
-    "degree": string,
-    "field": string,
-    "location": string,
-    "startDate": string,
-    "endDate": string,
-    "details": string
+    "school": "",
+    "degree": "",
+    "field": "",
+    "location": "",
+    "startDate": "",
+    "endDate": "",
+    "details": ""
   }],
-  "skills": [{ "category": string, "skills": string }],
+  "skills": [{ "category": "", "skills": "a, b, c" }],
   "portfolio": [{
-    "name": string,
-    "url": string,
-    "description": string,
-    "technologies": string
+    "name": "",
+    "url": "",
+    "description": "",
+    "technologies": ""
   }]
 }
 Rules:
-- Dates must be YYYY-MM when possible, else "".
-- description for experiences must be newline-separated bullets without leading dashes.
-- Do not invent facts not present in the source text.
-- Use empty string or empty arrays when unknown.
-- current=true only if clearly ongoing/present.`;
+- Output valid JSON only.
+- Prefer YYYY-MM dates; use "" if unknown.
+- Experience description is CRITICAL:
+  - Must be a bulleted list as newline-separated lines (use \\n between lines).
+  - Do NOT merge bullets into one paragraph or one line.
+  - Keep at least 3 separate lines per job whenever the source resume has enough content.
+  - Prefer copying distinct bullets/achievements from the resume; if the resume has 3+ bullets, keep at least 3.
+  - If the resume only has 1–2 bullets for a job, keep those (do not invent new facts).
+  - No leading dashes, bullets, or numbers on each line.
+- Portfolio description: keep meaningful detail; prefer 2–3 short lines when source has them.
+- Do not invent facts.
+- Use "" or [] when unknown.
+- current=true only if clearly ongoing.`;
 
   const user = `RESUME TEXT:
-${rawText.slice(0, 20000)}`;
+${rawText.slice(0, 14000)}
+
+Remember: for every experience with enough source content, description must contain at least 3 newline-separated bullet lines copied from the resume (never one merged paragraph).`;
 
   return [
     { role: "system" as const, content: system },
@@ -186,12 +200,47 @@ ${rawText.slice(0, 20000)}`;
 
 export function extractJson<T>(text: string): T {
   const trimmed = text.trim();
+  if (!trimmed) throw new Error("AI response was empty");
+
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced?.[1]?.trim() ?? trimmed;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("AI response did not contain JSON");
+  let candidate = fenced?.[1]?.trim() ?? trimmed;
+
+  // Strip leading prose before first { or [
+  const objStart = candidate.indexOf("{");
+  const arrStart = candidate.indexOf("[");
+  let start = -1;
+  if (objStart === -1) start = arrStart;
+  else if (arrStart === -1) start = objStart;
+  else start = Math.min(objStart, arrStart);
+
+  if (start === -1) throw new Error("AI response did not contain JSON");
+
+  candidate = candidate.slice(start);
+  const endObj = candidate.lastIndexOf("}");
+  const endArr = candidate.lastIndexOf("]");
+  const end = Math.max(endObj, endArr);
+  if (end <= 0) throw new Error("AI response did not contain JSON");
+  candidate = candidate.slice(0, end + 1);
+
+  // Common local-LLM JSON issues
+  candidate = candidate
+    .replace(/,\s*([}\]])/g, "$1") // trailing commas
+    .replace(/\u0000/g, "")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'");
+
+  try {
+    return JSON.parse(candidate) as T;
+  } catch {
+    // Last resort: balance truncated object by closing braces
+    let repaired = candidate;
+    const opens = (repaired.match(/{/g) ?? []).length;
+    const closes = (repaired.match(/}/g) ?? []).length;
+    if (opens > closes) repaired += "}".repeat(opens - closes);
+    const openArr = (repaired.match(/\[/g) ?? []).length;
+    const closeArr = (repaired.match(/]/g) ?? []).length;
+    if (openArr > closeArr) repaired += "]".repeat(openArr - closeArr);
+    repaired = repaired.replace(/,\s*([}\]])/g, "$1");
+    return JSON.parse(repaired) as T;
   }
-  return JSON.parse(candidate.slice(start, end + 1)) as T;
 }

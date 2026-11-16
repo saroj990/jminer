@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { formatDateRange, slugifyFilename } from "@/lib/format";
+import { formatDateRange, slugifyFilename, splitBulletLines } from "@/lib/format";
 import type { ResumeData } from "@/types/resume";
 
 const PAGE = { width: 612, height: 792 };
@@ -212,7 +212,8 @@ export async function exportResumeToPdf(resume: ResumeData): Promise<void> {
   if (filledExperiences.length) {
     drawSectionHeading(cursor, "Experience");
     for (const item of filledExperiences) {
-      const left = [item.role || "Role", item.company].filter(Boolean).join("  ·  ");
+      const role = item.role || "Role";
+      const left = item.company ? `${role} (${item.company})` : role;
       const right = [
         formatDateRange(item.startDate, item.endDate, item.current),
         item.location,
@@ -220,12 +221,10 @@ export async function exportResumeToPdf(resume: ResumeData): Promise<void> {
         .filter(Boolean)
         .join("  ·  ");
       drawRow(cursor, left, right);
-      item.description
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .forEach((line) => drawBullet(cursor, line));
-      cursor.y += 4;
+      for (const line of splitBulletLines(item.description)) {
+        drawBullet(cursor, line);
+      }
+      cursor.y += 6;
     }
   }
 
@@ -296,14 +295,18 @@ export async function exportResumeToPdf(resume: ResumeData): Promise<void> {
         });
       }
       if (item.description.trim()) {
-        drawParagraph(cursor, item.description.trim(), { size: 10, gap: 2 });
+        for (const line of splitBulletLines(item.description)) {
+          drawBullet(cursor, line);
+        }
       }
       if (item.technologies.trim()) {
         drawParagraph(cursor, item.technologies.trim(), {
           size: 9,
           color: COLORS.muted,
-          gap: 6,
+          gap: 8,
         });
+      } else {
+        cursor.y += 6;
       }
     }
   }

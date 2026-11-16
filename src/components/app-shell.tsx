@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import type { ReactNode } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui";
 
 const links = [
@@ -11,6 +12,7 @@ const links = [
   { href: "/profile", label: "Master Profile" },
   { href: "/resumes", label: "Resumes" },
   { href: "/builder", label: "Builder" },
+  { href: "/upwork", label: "Upwork" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -20,7 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--canvas)_82%,white)]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--header-bg)]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link
             href="/dashboard"
@@ -39,7 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
                     active
                       ? "bg-[var(--accent)] text-white"
-                      : "text-[var(--ink-muted)] hover:bg-white hover:text-[var(--ink)]"
+                      : "text-[var(--ink-muted)] hover:bg-[var(--panel)] hover:text-[var(--ink)]"
                   }`}
                 >
                   {link.label}
@@ -48,6 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="flex items-center gap-2">
+            <ThemeToggle compact />
             <span className="hidden text-sm text-[var(--ink-muted)] sm:inline">
               {data?.user?.email}
             </span>
@@ -61,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               key={link.href}
               href={link.href}
-              className="shrink-0 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-[var(--ink-soft)] ring-1 ring-[var(--line)]"
+              className="shrink-0 rounded-full bg-[var(--panel)] px-3 py-1.5 text-sm font-semibold text-[var(--ink-soft)] ring-1 ring-[var(--line)]"
             >
               {link.label}
             </Link>

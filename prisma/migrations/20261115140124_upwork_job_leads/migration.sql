@@ -1,0 +1,27 @@
+-- CreateTable
+CREATE TABLE "UpworkJobLead" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL DEFAULT '',
+    "jobUrl" TEXT NOT NULL DEFAULT '',
+    "postedAtText" TEXT NOT NULL DEFAULT '',
+    "description" TEXT NOT NULL DEFAULT '',
+    "techStackJson" TEXT NOT NULL DEFAULT '[]',
+    "connectsRequired" INTEGER,
+    "hourlyRateText" TEXT NOT NULL DEFAULT '',
+    "durationText" TEXT NOT NULL DEFAULT '',
+    "experienceLevel" TEXT NOT NULL DEFAULT '',
+    "projectType" TEXT NOT NULL DEFAULT '',
+    "clientName" TEXT NOT NULL DEFAULT '',
+    "clientInfoJson" TEXT NOT NULL DEFAULT '{}',
+    "activityJson" TEXT NOT NULL DEFAULT '{}',
+    "engagementScore" INTEGER,
+    "genuinenessScore" INTEGER,
+    "aiAnalysisJson" TEXT NOT NULL DEFAULT '{}',
+    "analyzedAt" DATETIME,
+    "notes" TEXT NOT NULL DEFAULT '',
+    "status" TEXT NOT NULL DEFAULT 'interested',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "UpworkJobLead_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);

@@ -123,7 +123,7 @@ export default function ProfilePage() {
         ].map(([label, value]) => (
           <div
             key={String(label)}
-            className="rounded-xl border border-[var(--line)] bg-white px-4 py-3"
+            className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3"
           >
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--ink-muted)]">
               {label}
@@ -133,7 +133,7 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      <section className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-[var(--shadow)]">
+      <section className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6 shadow-[var(--shadow)]">
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Full name" value={form.fullName} onChange={(e) => set("fullName", e.target.value)} />
           <TextField label="Headline" value={form.headline} onChange={(e) => set("headline", e.target.value)} />

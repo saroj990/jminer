@@ -43,7 +43,7 @@ export function AiAssistantPanel() {
 
   if (status !== "authenticated") {
     return (
-      <section className="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-[var(--shadow)]">
+      <section className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[var(--shadow)]">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]">
           AI assistant
         </h2>
@@ -115,7 +115,7 @@ export function AiAssistantPanel() {
   };
 
   return (
-    <section className="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-[var(--shadow)]">
+    <section className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[var(--shadow)]">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]">
@@ -129,7 +129,7 @@ export function AiAssistantPanel() {
           </p>
         </div>
         <select
-          className="h-10 rounded-lg border border-[var(--line)] bg-white px-3 text-sm"
+          className="h-10 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm"
           value={modeOverride}
           onChange={(e) => setModeOverride(e.target.value as AIMode | "default")}
         >

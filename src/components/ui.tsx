@@ -31,7 +31,7 @@ export function TextField({
         type={type}
         spellCheck={enableSpellCheck}
         autoCorrect={enableSpellCheck ? "on" : "off"}
-        className="h-10 rounded-lg border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] outline-none transition placeholder:text-[var(--ink-muted)]/70 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] disabled:cursor-not-allowed disabled:bg-[var(--panel-muted)] disabled:opacity-60"
+        className="h-10 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm text-[var(--ink)] shadow-[var(--input-inset)] outline-none transition placeholder:text-[var(--ink-muted)]/70 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)] disabled:cursor-not-allowed disabled:bg-[var(--panel-muted)] disabled:opacity-60"
         {...props}
       />
       {hint ? <span className="text-xs text-[var(--ink-muted)]">{hint}</span> : null}
@@ -54,7 +54,7 @@ export function TextArea({
       <textarea
         spellCheck={spellCheck}
         autoCorrect="on"
-        className="min-h-24 rounded-lg border border-[var(--line)] bg-white px-3 py-2.5 text-sm text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] outline-none transition placeholder:text-[var(--ink-muted)]/70 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]"
+        className="min-h-24 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm text-[var(--ink)] shadow-[var(--input-inset)] outline-none transition placeholder:text-[var(--ink-muted)]/70 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]"
         {...props}
       />
       {hint ? <span className="text-xs text-[var(--ink-muted)]">{hint}</span> : null}
@@ -110,7 +110,7 @@ export function EntryCard({
           <button
             type="button"
             onClick={onRemove}
-            className="rounded-md px-2 py-1 text-xs font-medium text-[var(--danger)] transition hover:bg-red-50"
+            className="rounded-md px-2 py-1 text-xs font-medium text-[var(--danger)] transition hover:bg-[var(--danger-soft)]"
           >
             Remove
           </button>
@@ -132,7 +132,7 @@ export function AddButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex shrink-0 items-center justify-center rounded-lg border border-dashed border-[var(--accent)] bg-[var(--accent-soft)] px-3 py-2 text-sm font-semibold text-[var(--accent)] transition hover:bg-white"
+      className="inline-flex shrink-0 items-center justify-center rounded-lg border border-dashed border-[var(--accent)] bg-[var(--accent-soft)] px-3 py-2 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--panel)]"
     >
       {label}
     </button>
@@ -150,8 +150,8 @@ export function Button({
     variant === "primary"
       ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-[0_8px_20px_-10px_rgba(31,122,108,0.7)]"
       : variant === "ghost"
-        ? "text-[var(--ink-muted)] hover:bg-white/70 hover:text-[var(--ink)]"
-        : "border border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)]";
+        ? "text-[var(--ink-muted)] hover:bg-[var(--panel)]/70 hover:text-[var(--ink)]"
+        : "border border-[var(--line)] bg-[var(--panel)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)]";
 
   return (
     <button

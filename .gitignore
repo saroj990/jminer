@@ -46,3 +46,6 @@ next-env.d.ts
 *.db
 *.db-journal
 prisma/dev.db
+
+# local learning notes (not for the repo)
+CODEBASE_UNDERSTANDING.md

@@ -11,21 +11,36 @@ function newId() {
 }
 
 export function parsedPayloadToResumeData(parsed: ParsedResumePayload): ResumeData {
+  const personal = parsed?.personal ?? {
+    fullName: "",
+    title: "",
+    email: "",
+    phone: "",
+    location: "",
+    website: "",
+    linkedin: "",
+    github: "",
+  };
+  const experiences = Array.isArray(parsed?.experiences) ? parsed.experiences : [];
+  const education = Array.isArray(parsed?.education) ? parsed.education : [];
+  const skills = Array.isArray(parsed?.skills) ? parsed.skills : [];
+  const portfolio = Array.isArray(parsed?.portfolio) ? parsed.portfolio : [];
+
   return {
     personal: {
-      fullName: parsed.personal.fullName || "",
-      title: parsed.personal.title || "",
-      email: parsed.personal.email || "",
-      phone: parsed.personal.phone || "",
-      location: parsed.personal.location || "",
-      website: parsed.personal.website || "",
-      linkedin: parsed.personal.linkedin || "",
-      github: parsed.personal.github || "",
+      fullName: personal.fullName || "",
+      title: personal.title || "",
+      email: personal.email || "",
+      phone: personal.phone || "",
+      location: personal.location || "",
+      website: personal.website || "",
+      linkedin: personal.linkedin || "",
+      github: personal.github || "",
     },
-    summary: parsed.summary || "",
+    summary: parsed?.summary || "",
     experiences:
-      parsed.experiences.length > 0
-        ? parsed.experiences.map((item) => ({ ...item, id: newId() }))
+      experiences.length > 0
+        ? experiences.map((item) => ({ ...item, id: newId() }))
         : [
             {
               id: newId(),
@@ -39,8 +54,8 @@ export function parsedPayloadToResumeData(parsed: ParsedResumePayload): ResumeDa
             },
           ],
     education:
-      parsed.education.length > 0
-        ? parsed.education.map((item) => ({ ...item, id: newId() }))
+      education.length > 0
+        ? education.map((item) => ({ ...item, id: newId() }))
         : [
             {
               id: newId(),
@@ -54,12 +69,12 @@ export function parsedPayloadToResumeData(parsed: ParsedResumePayload): ResumeDa
             },
           ],
     skills:
-      parsed.skills.length > 0
-        ? parsed.skills.map((item) => ({ ...item, id: newId() }))
+      skills.length > 0
+        ? skills.map((item) => ({ ...item, id: newId() }))
         : [{ id: newId(), category: "", skills: "" }],
     portfolio:
-      parsed.portfolio.length > 0
-        ? parsed.portfolio.map((item) => ({ ...item, id: newId() }))
+      portfolio.length > 0
+        ? portfolio.map((item) => ({ ...item, id: newId() }))
         : [
             {
               id: newId(),
