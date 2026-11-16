@@ -37,6 +37,8 @@ model UserPreferences {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// online = Gemini → Cerebras → Groq; local = Ollama only
   aiMode String @default("online")
+  /// Saved resume used for Upwork ATS matching (latest version snapshot)
+  primaryResumeId String?
 }
 
 model Profile {
@@ -237,6 +239,9 @@ model UpworkJobLead {
   genuinenessScore Int?
   aiAnalysisJson   String    @default("{}")
   analyzedAt       DateTime?
+  atsScore         Int?
+  atsAnalysisJson  String    @default("{}")
+  atsScoredAt      DateTime?
   notes            String    @default("")
   status           String    @default("interested")
   createdAt        DateTime  @default(now())

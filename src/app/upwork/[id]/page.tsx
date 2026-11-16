@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { UpworkActivityCard } from "@/components/upwork-activity-card";
+import { UpworkAtsCard } from "@/components/upwork-ats-card";
+import { UpworkClientCard } from "@/components/upwork-client-card";
+import { UpworkScorePanel } from "@/components/upwork-score-panel";
 import { Button } from "@/components/ui";
+import type { AtsAnalysis } from "@/components/upwork-ats-card";
 import type { UpworkAnalysis } from "@/types/upwork-lead";
 
 type LeadDetail = {
@@ -24,24 +29,13 @@ type LeadDetail = {
   activity: Record<string, unknown>;
   engagementScore: number | null;
   genuinenessScore: number | null;
+  atsScore: number | null;
+  atsAnalysis: AtsAnalysis | null;
   analysis: UpworkAnalysis | null;
   analyzedAt: string | null;
   notes: string;
   status: string;
 };
-
-function ScoreCard({ label, value }: { label: string; value: number | null }) {
-  return (
-    <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-muted)] px-4 py-3">
-      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
-        {label}
-      </p>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-        {value ?? "—"}
-      </p>
-    </div>
-  );
-}
 
 export default function UpworkLeadDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -58,7 +52,13 @@ export default function UpworkLeadDetailPage() {
         if (!res.ok) throw new Error("Not found");
         return res.json();
       })
-      .then((data) => setLead(data.lead))
+      .then((data) => {
+        const lead = data.lead;
+        setLead({
+          ...lead,
+          atsAnalysis: lead.atsAnalysis as AtsAnalysis | null,
+        });
+      })
       .catch((err) => setError(err.message));
   }, [id]);
 
@@ -149,48 +149,37 @@ export default function UpworkLeadDetailPage() {
       {meta ? <p className="mt-2 text-xs text-[var(--ink-muted)]">{meta}</p> : null}
       {error ? <p className="mt-2 text-sm text-[var(--danger)]">{error}</p> : null}
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <ScoreCard label="Engagement index" value={lead.engagementScore} />
-        <ScoreCard label="Genuineness" value={lead.genuinenessScore} />
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-muted)] px-4 py-3">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
-            Worth the Connects?
-          </p>
-          <p className="mt-1 text-lg font-semibold text-[var(--ink)]">
-            {a?.creditWorthIt?.toUpperCase() ?? "Run analysis"}
-          </p>
-        </div>
-      </div>
+      <UpworkScorePanel
+        lead={{
+          description: lead.description,
+          connectsRequired: lead.connectsRequired,
+          clientInfo: lead.clientInfo,
+          activity: lead.activity,
+          engagementScore: lead.engagementScore,
+          genuinenessScore: lead.genuinenessScore,
+        }}
+        analysis={a}
+        analyzedAt={lead.analyzedAt}
+      />
 
-      {a ? (
-        <section className="mt-6 max-w-3xl rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6">
-          <p className="text-sm leading-relaxed text-[var(--ink)]">{a.summary}</p>
-          {a.engagementFactors.length ? (
-            <div>
-              <h3 className="mt-4 text-sm font-semibold text-[var(--ink)]">Engagement signals</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--ink-soft)]">
-                {a.engagementFactors.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {a.riskFlags.length ? (
-            <div>
-              <h3 className="mt-4 text-sm font-semibold text-[var(--ink)]">Risk flags</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--danger)]">
-                {a.riskFlags.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          <p className="mt-4 text-xs text-[var(--ink-muted)]">
-            Recommend apply: {a.recommendApply ? "Yes" : "No"}
-            {lead.analyzedAt ? ` · Last run ${new Date(lead.analyzedAt).toLocaleString()}` : ""}
-          </p>
-        </section>
-      ) : null}
+      <div className="mt-6">
+        <UpworkAtsCard
+          leadId={lead.id}
+          initialScore={lead.atsScore}
+          initialAnalysis={lead.atsAnalysis}
+          onScored={(score, analysis) =>
+            setLead((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    atsScore: Math.round(score),
+                    atsAnalysis: analysis,
+                  }
+                : prev,
+            )
+          }
+        />
+      </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6">
@@ -214,9 +203,20 @@ export default function UpworkLeadDetailPage() {
             </div>
           </dl>
           <h3 className="mt-4 text-sm font-semibold text-[var(--ink)]">Tech stack</h3>
-          <p className="mt-1 text-sm text-[var(--ink-soft)]">
-            {lead.techStack.length ? lead.techStack.join(", ") : "—"}
-          </p>
+          {lead.techStack.length ? (
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {lead.techStack.map((skill) => (
+                <li
+                  key={skill}
+                  className="rounded-full bg-[var(--panel-muted)] px-2.5 py-1 text-xs font-medium text-[var(--ink-soft)] ring-1 ring-[var(--line)]"
+                >
+                  {skill}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">—</p>
+          )}
           <h3 className="mt-4 text-sm font-semibold text-[var(--ink)]">Description</h3>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--ink-soft)]">
             {lead.description || "—"}
@@ -224,18 +224,8 @@ export default function UpworkLeadDetailPage() {
         </section>
 
         <section className="space-y-6">
-          <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6">
-            <h2 className="text-lg font-semibold text-[var(--ink)]">Client</h2>
-            <pre className="mt-3 max-h-64 overflow-auto rounded-lg bg-[var(--panel-muted)] p-3 text-xs text-[var(--ink-soft)]">
-              {JSON.stringify(lead.clientInfo, null, 2)}
-            </pre>
-          </div>
-          <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6">
-            <h2 className="text-lg font-semibold text-[var(--ink)]">Activity on this job</h2>
-            <pre className="mt-3 rounded-lg bg-[var(--panel-muted)] p-3 text-xs text-[var(--ink-soft)]">
-              {JSON.stringify(lead.activity, null, 2)}
-            </pre>
-          </div>
+          <UpworkClientCard clientName={lead.clientName} clientInfo={lead.clientInfo} />
+          <UpworkActivityCard activity={lead.activity} />
         </section>
       </div>
     </AppShell>

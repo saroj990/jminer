@@ -5,6 +5,7 @@ import { generateWithFallback } from "@/lib/ai/providers";
 import { buildUpworkAnalyzeMessages } from "@/lib/ai/upwork";
 import { prisma } from "@/lib/prisma";
 import { parseJsonObject, parseTechStackJson, serializeLead } from "@/lib/upwork-db";
+import { calibrateUpworkAnalysis } from "@/lib/upwork-score-calibration";
 import { upworkAnalysisSchema } from "@/types/upwork-lead";
 
 type Params = { params: Promise<{ id: string }> };
@@ -36,7 +37,13 @@ export async function POST(_request: Request, { params }: Params) {
       }),
     );
 
-    const analysis = upworkAnalysisSchema.parse(extractJson(result.text));
+    const raw = upworkAnalysisSchema.parse(extractJson(result.text));
+    const analysis = calibrateUpworkAnalysis(raw, {
+      description: row.description,
+      connectsRequired: row.connectsRequired,
+      clientInfo: parseJsonObject(row.clientInfoJson),
+      activity: parseJsonObject(row.activityJson),
+    });
 
     const updated = await prisma.upworkJobLead.update({
       where: { id },

@@ -15,6 +15,7 @@ type LeadRow = {
   postedAtText: string;
   engagementScore: number | null;
   genuinenessScore: number | null;
+  atsScore: number | null;
   status: string;
 };
 
@@ -34,6 +35,7 @@ export default function UpworkLeadsPage() {
   const [parsed, setParsed] = useState<ParsedUpworkJob | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [parsePhase, setParsePhase] = useState<"ocr" | "ai" | null>(null);
+  const [atsRunningId, setAtsRunningId] = useState<string | null>(null);
   const [duplicateExisting, setDuplicateExisting] = useState<{
     id: string;
     title: string;
@@ -86,6 +88,27 @@ export default function UpworkLeadsPage() {
     } finally {
       setParsing(false);
       setParsePhase(null);
+    }
+  };
+
+  const runAtsForLead = async (leadId: string) => {
+    setAtsRunningId(leadId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/upwork/leads/${leadId}/ats`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ATS failed");
+      setLeads((prev) =>
+        prev.map((row) =>
+          row.id === leadId
+            ? { ...row, atsScore: data.lead?.atsScore ?? data.analysis?.score ?? null }
+            : row,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ATS failed");
+    } finally {
+      setAtsRunningId(null);
     }
   };
 
@@ -232,18 +255,20 @@ export default function UpworkLeadsPage() {
                 <th className="px-4 py-3">Posted</th>
                 <th className="px-4 py-3">Engagement</th>
                 <th className="px-4 py-3">Genuine</th>
+                <th className="px-4 py-3">ATS</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-[var(--ink-muted)]">
+                  <td colSpan={8} className="px-4 py-8 text-[var(--ink-muted)]">
                     Loading…
                   </td>
                 </tr>
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-[var(--ink-muted)]">
+                  <td colSpan={8} className="px-4 py-8 text-[var(--ink-muted)]">
                     No leads yet. Import screenshots above.
                   </td>
                 </tr>
@@ -269,6 +294,22 @@ export default function UpworkLeadsPage() {
                     </td>
                     <td className="px-4 py-3">{scoreBadge(lead.engagementScore)}</td>
                     <td className="px-4 py-3">{scoreBadge(lead.genuinenessScore)}</td>
+                    <td className="px-4 py-3 tabular-nums">
+                      {lead.atsScore != null ? `${lead.atsScore}` : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        disabled={atsRunningId === lead.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          runAtsForLead(lead.id);
+                        }}
+                        className="rounded-lg bg-[var(--accent)] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+                      >
+                        {atsRunningId === lead.id ? "…" : "ATS"}
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}

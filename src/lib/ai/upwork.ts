@@ -71,7 +71,8 @@ export function buildUpworkAnalyzeMessages(lead: {
   activity: Record<string, unknown>;
 }) {
   const system = `You help a freelancer decide whether to spend Upwork Connects on a job proposal.
-Score honestly using only the provided data. Do not invent client facts.
+Be conservative and skeptical. When data is missing, assume weaker signals — never give high scores to fill gaps.
+Use ONLY fields present in the user message. Do not invent client facts, spend, or activity.
 Return ONLY JSON:
 {
   "engagementScore": number,
@@ -82,9 +83,19 @@ Return ONLY JSON:
   "riskFlags": string[],
   "creditWorthIt": "yes" | "maybe" | "no"
 }
-engagementScore (0-100): likelihood of client reading/replying/hiring (recent views, interviewing, spend history, hire rate, reviews).
-genuinenessScore (0-100): looks like a real job vs scam/low-effort (verified payment, spend, coherent description, realistic budget).
-creditWorthIt: whether connects cost is justified given competition and client quality.`;
+
+Scoring anchors (use the full 0–100 range; most jobs should land 35–70):
+- engagementScore: Will this client realistically read and respond? Weight: last viewed by client (recent = better), interviewing count, invites, proposal competition (50+ = bad), hire rate, review count, total spend, active hires.
+- genuinenessScore: Real job vs scam/vague bait. Weight: payment verified, phone verified, spend history, coherent detailed description, realistic rate/duration, client history (jobs posted vs reviews).
+
+Hard rules:
+- If payment verified is false or missing → genuineness rarely above 65.
+- If client/activity blocks are empty or mostly null → both scores should stay below 55 and list risks.
+- If description is short/vague or rate seems unrealistic → lower genuineness and add riskFlags.
+- recommendApply true only when both scores ≥ 58 AND no serious riskFlags.
+- creditWorthIt "no" when connects are high vs weak client signals or heavy competition.
+
+engagementFactors and riskFlags: short concrete bullets tied to actual provided fields (cite numbers when present).`;
 
   const user = `JOB:
 Title: ${lead.title}

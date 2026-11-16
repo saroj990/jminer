@@ -20,6 +20,8 @@ export default function ResumesPage() {
   const [template, setTemplate] = useState("classic");
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [primaryResumeId, setPrimaryResumeId] = useState<string | null>(null);
+  const [primarySaving, setPrimarySaving] = useState<string | null>(null);
 
   const load = () => {
     fetch("/api/resumes")
@@ -33,7 +35,32 @@ export default function ResumesPage() {
 
   useEffect(() => {
     load();
+    fetch("/api/preferences")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.primaryResumeId) setPrimaryResumeId(data.primaryResumeId);
+      })
+      .catch(() => undefined);
   }, []);
+
+  const setPrimary = async (id: string) => {
+    setPrimarySaving(id);
+    setError(null);
+    try {
+      const res = await fetch("/api/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ primaryResumeId: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to set primary");
+      setPrimaryResumeId(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set primary");
+    } finally {
+      setPrimarySaving(null);
+    }
+  };
 
   const create = async () => {
     if (!name.trim()) return;
@@ -127,9 +154,21 @@ export default function ResumesPage() {
               </p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">
                 Versions: {resume.versions.length}
+                {primaryResumeId === resume.id ? " · Primary for Upwork ATS" : ""}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                disabled={primarySaving === resume.id || primaryResumeId === resume.id}
+                onClick={() => setPrimary(resume.id)}
+              >
+                {primaryResumeId === resume.id
+                  ? "Primary"
+                  : primarySaving === resume.id
+                    ? "Saving…"
+                    : "Set as primary"}
+              </Button>
               <Link href={`/builder?resumeId=${resume.id}`}>
                 <Button variant="primary">Open</Button>
               </Link>

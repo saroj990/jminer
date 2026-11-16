@@ -60,6 +60,16 @@ export function serializeLead(row: UpworkJobLead) {
     activity: parseJsonObject(row.activityJson),
     engagementScore: row.engagementScore,
     genuinenessScore: row.genuinenessScore,
+    atsScore: row.atsScore,
+    atsAnalysis: (() => {
+      try {
+        const v = JSON.parse(row.atsAnalysisJson) as Record<string, unknown>;
+        return Object.keys(v).length ? v : null;
+      } catch {
+        return null;
+      }
+    })(),
+    atsScoredAt: row.atsScoredAt?.toISOString() ?? null,
     analysis: Object.keys(analysis).length ? analysis : null,
     analyzedAt: row.analyzedAt?.toISOString() ?? null,
     notes: row.notes,
