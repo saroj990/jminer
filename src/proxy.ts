@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const protectedPrefixes = ["/dashboard", "/settings", "/resumes", "/profile", "/upwork"];
+const protectedPrefixes = [
+  "/dashboard",
+  "/settings",
+  "/resumes",
+  "/profile",
+  "/builder",
+  "/upwork",
+  "/applications",
+];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -32,5 +40,7 @@ export const config = {
     "/resumes/:path*",
     "/profile/:path*",
     "/upwork/:path*",
+    "/builder/:path*",
+    "/applications/:path*",
   ],
 };

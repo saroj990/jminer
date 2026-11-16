@@ -118,7 +118,7 @@ export default function UpworkLeadDetailPage() {
   return (
     <AppShell>
       <Link href="/upwork" className="text-sm font-semibold text-[var(--accent)]">
-        ← Upwork leads
+        ← Project leads
       </Link>
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">

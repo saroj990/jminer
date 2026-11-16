@@ -7,6 +7,33 @@ type Props = {
   compact?: boolean;
 };
 
+/** Full-width item for account dropdown menus */
+export function ThemeMenuItem() {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
+
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={toggleTheme}
+      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm font-semibold text-[var(--ink-soft)] hover:bg-[var(--panel-muted)]"
+    >
+      <span className="inline-flex items-center gap-2">
+        {isDark ? (
+          <SunIcon className="h-4 w-4 shrink-0 text-[var(--ink-muted)]" />
+        ) : (
+          <MoonIcon className="h-4 w-4 shrink-0 text-[var(--ink-muted)]" />
+        )}
+        Theme
+      </span>
+      <span className="text-xs font-medium text-[var(--ink-muted)]">
+        {isDark ? "Light" : "Dark"}
+      </span>
+    </button>
+  );
+}
+
 export function ThemeToggle({ className = "", compact = false }: Props) {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";

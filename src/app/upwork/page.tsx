@@ -162,7 +162,7 @@ export default function UpworkLeadsPage() {
             Pipeline
           </p>
           <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-            Upwork leads
+            Project leads
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-[var(--ink-muted)]">
             Upload job screenshots (1–3 images). OCR runs in your browser; structuring uses
