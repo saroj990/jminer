@@ -1,4 +1,5 @@
 import { parsedUpworkJobSchema, type ParsedUpworkJob } from "@/types/upwork-lead";
+import { normalizeJobUrl } from "@/lib/upwork-posted-at";
 
 function numOrNull(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -84,7 +85,7 @@ export function normalizeUpworkParsed(raw: unknown): ParsedUpworkJob {
   const candidate = {
     title: str(o.title).trim() || "Untitled Upwork job",
     postedAtText: str(o.postedAtText) || undefined,
-    jobUrl: str(o.jobUrl) || undefined,
+    jobUrl: normalizeJobUrl(str(o.jobUrl) || undefined),
     description: str(o.description),
     techStack,
     connectsRequired: numOrNull(o.connectsRequired),

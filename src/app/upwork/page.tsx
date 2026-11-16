@@ -5,14 +5,20 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui";
 import { ocrImageFiles } from "@/lib/upwork-ocr-client";
+import {
+  formatJobPostedAt,
+  isUsableJobUrl,
+} from "@/lib/upwork-posted-at";
 import type { ParsedUpworkJob } from "@/types/upwork-lead";
 
 type LeadRow = {
   id: string;
   title: string;
   clientName: string;
+  jobUrl: string;
   connectsRequired: number | null;
   postedAtText: string;
+  postedAt: string | null;
   engagementScore: number | null;
   genuinenessScore: number | null;
   atsScore: number | null;
@@ -36,6 +42,7 @@ export default function UpworkLeadsPage() {
   const [parseError, setParseError] = useState<string | null>(null);
   const [parsePhase, setParsePhase] = useState<"ocr" | "ai" | null>(null);
   const [atsRunningId, setAtsRunningId] = useState<string | null>(null);
+  const [ocrCapturedAt, setOcrCapturedAt] = useState<string | null>(null);
   const [duplicateExisting, setDuplicateExisting] = useState<{
     id: string;
     title: string;
@@ -65,10 +72,13 @@ export default function UpworkLeadsPage() {
     setParseError(null);
     setParsed(null);
     setDuplicateExisting(null);
+    setOcrCapturedAt(null);
     try {
       const picked = Array.from(files).slice(0, 3);
       setParsePhase("ocr");
       const ocrText = await ocrImageFiles(picked);
+      const capturedAt = new Date().toISOString();
+      setOcrCapturedAt(capturedAt);
       if (ocrText.trim().length < 80) {
         throw new Error(
           "OCR could not read enough text. Use full-page screenshots at normal zoom.",
@@ -78,7 +88,7 @@ export default function UpworkLeadsPage() {
       const res = await fetch("/api/upwork/parse-from-ocr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ocrText }),
+        body: JSON.stringify({ ocrText, capturedAt }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Parse failed");
@@ -120,7 +130,11 @@ export default function UpworkLeadsPage() {
       const res = await fetch("/api/upwork/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parsed, allowDuplicate }),
+        body: JSON.stringify({
+          parsed,
+          capturedAt: ocrCapturedAt ?? undefined,
+          allowDuplicate,
+        }),
       });
       const data = await res.json();
       if (res.status === 409 && data.duplicate) {
@@ -191,8 +205,10 @@ export default function UpworkLeadsPage() {
           <div className="mt-5 space-y-3 rounded-xl border border-[var(--line)] bg-[var(--panel-muted)] p-4">
             <p className="text-sm font-semibold text-[var(--ink)]">{parsed.title}</p>
             <p className="text-xs text-[var(--ink-muted)]">
-              {parsed.postedAtText || "Posted time unknown"} · Connects:{" "}
-              {parsed.connectsRequired ?? "?"} · Client:{" "}
+              Posted:{" "}
+              {formatJobPostedAt(parsed.postedAtIso, parsed.postedAtText ?? "")}
+              {parsed.postedAtText ? ` (${parsed.postedAtText})` : ""} · Job URL:{" "}
+              {parsed.jobUrl ?? "N/A"} · Connects: {parsed.connectsRequired ?? "?"} · Client:{" "}
               {parsed.client?.location || parsed.client?.industry || "—"}
             </p>
             <p className="line-clamp-4 text-sm text-[var(--ink-soft)]">{parsed.description}</p>
@@ -252,6 +268,7 @@ export default function UpworkLeadsPage() {
                 <th className="px-4 py-3">Project</th>
                 <th className="px-4 py-3">Client</th>
                 <th className="px-4 py-3">Connects</th>
+                <th className="px-4 py-3">Job URL</th>
                 <th className="px-4 py-3">Posted</th>
                 <th className="px-4 py-3">Engagement</th>
                 <th className="px-4 py-3">Genuine</th>
@@ -262,13 +279,13 @@ export default function UpworkLeadsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-[var(--ink-muted)]">
+                  <td colSpan={9} className="px-4 py-8 text-[var(--ink-muted)]">
                     Loading…
                   </td>
                 </tr>
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-[var(--ink-muted)]">
+                  <td colSpan={9} className="px-4 py-8 text-[var(--ink-muted)]">
                     No leads yet. Import screenshots above.
                   </td>
                 </tr>
@@ -289,8 +306,22 @@ export default function UpworkLeadsPage() {
                     </td>
                     <td className="px-4 py-3 text-[var(--ink-soft)]">{lead.clientName}</td>
                     <td className="px-4 py-3">{lead.connectsRequired ?? "—"}</td>
+                    <td className="max-w-[8rem] truncate px-4 py-3 text-[var(--ink-muted)]">
+                      {isUsableJobUrl(lead.jobUrl) ? (
+                        <a
+                          href={lead.jobUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[var(--accent)] hover:underline"
+                        >
+                          Open
+                        </a>
+                      ) : (
+                        "N/A"
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-[var(--ink-muted)]">
-                      {lead.postedAtText || "—"}
+                      {formatJobPostedAt(lead.postedAt, lead.postedAtText)}
                     </td>
                     <td className="px-4 py-3">{scoreBadge(lead.engagementScore)}</td>
                     <td className="px-4 py-3">{scoreBadge(lead.genuinenessScore)}</td>

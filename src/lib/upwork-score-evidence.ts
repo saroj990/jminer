@@ -308,7 +308,7 @@ export function buildScoreEvidence(
   }
 
   if (analysis) {
-    for (const [i, factor] of analysis.engagementFactors.entries()) {
+    for (const [i, factor] of analysis.engagementFactors.slice(0, 3).entries()) {
       engagement.push(
         item(`llm-eng-${i}`, "positive", "AI signal", factor, "scores"),
       );
@@ -316,12 +316,16 @@ export function buildScoreEvidence(
 
     const genuinenessRiskPattern =
       /payment|description|sparse|scam|verify|spend|vague|thin/i;
+    const engagementRiskPattern =
+      /competition|connect|proposal|view|hire|review|interview/i;
     for (const [i, flag] of analysis.riskFlags.entries()) {
       const entry = item(`llm-risk-${i}`, "negative", "Risk flag", flag, "scores");
       if (genuinenessRiskPattern.test(flag)) {
         genuineness.push(entry);
       }
-      engagement.push(entry);
+      if (engagementRiskPattern.test(flag)) {
+        engagement.push(entry);
+      }
       if (/competition|connect|proposal|view/i.test(flag)) {
         connects.push(entry);
       }

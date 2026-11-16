@@ -30,6 +30,8 @@ export const upworkActivitySchema = z.object({
 export const parsedUpworkJobSchema = z.object({
   title: z.string().default(""),
   postedAtText: z.string().optional(),
+  /** ISO datetime computed at OCR capture from postedAtText */
+  postedAtIso: z.string().datetime().optional(),
   jobUrl: z.string().optional(),
   description: z.string().default(""),
   techStack: z.array(z.string()).default([]),

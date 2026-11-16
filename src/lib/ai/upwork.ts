@@ -8,7 +8,7 @@ Return ONLY valid JSON matching this schema (no markdown):
 {
   "title": string,
   "postedAtText": string,
-  "jobUrl": string,
+  "jobUrl": string (full https URL from OCR, or "N/A"),
   "description": string,
   "techStack": string[],
   "connectsRequired": number | null,

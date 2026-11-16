@@ -29,43 +29,77 @@ function creditTone(v?: string) {
   return "text-amber-700 dark:text-amber-400";
 }
 
-function EvidenceList({ items }: { items: ScoreEvidenceItem[] }) {
+function toneRing(tone: ScoreEvidenceItem["tone"]) {
+  if (tone === "positive") return "ring-[var(--accent)]/25 bg-[var(--accent-soft)]/40";
+  if (tone === "negative") return "ring-[var(--danger)]/25 bg-[var(--danger)]/5";
+  return "ring-[var(--line)] bg-[var(--panel-muted)]";
+}
+
+function toneMark(tone: ScoreEvidenceItem["tone"]) {
+  if (tone === "positive") return { sym: "+", cls: "text-[var(--accent)]" };
+  if (tone === "negative") return { sym: "−", cls: "text-[var(--danger)]" };
+  return { sym: "·", cls: "text-[var(--ink-muted)]" };
+}
+
+function EvidenceCardGrid({ items }: { items: ScoreEvidenceItem[] }) {
   if (!items.length) {
     return (
       <p className="text-sm text-[var(--ink-muted)]">
-        Run AI scores to populate signals. Evidence is taken from saved client, activity, and job
-        fields on this lead.
+        Run AI scores to populate signals. Evidence comes from saved client, activity, and job fields.
       </p>
     );
   }
   return (
-    <ul className="space-y-2">
-      {items.map((row) => (
-        <li
-          key={row.id}
-          className="rounded-xl border border-[var(--line)] bg-[var(--panel-muted)] px-3 py-2.5"
-        >
-          <div className="flex items-start gap-2">
-            <span
-              className={`mt-0.5 shrink-0 text-xs font-bold uppercase ${
-                row.tone === "positive"
-                  ? "text-[var(--accent)]"
-                  : row.tone === "negative"
-                    ? "text-[var(--danger)]"
-                    : "text-[var(--ink-muted)]"
-              }`}
-              aria-hidden
-            >
-              {row.tone === "positive" ? "+" : row.tone === "negative" ? "−" : "·"}
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[var(--ink)]">{row.headline}</p>
-              <p className="mt-0.5 text-xs leading-relaxed text-[var(--ink-soft)]">{row.evidence}</p>
-              <p className="mt-1 text-[0.65rem] uppercase tracking-wide text-[var(--ink-muted)]">
-                Source: {row.source}
+    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      {items.map((row) => {
+        const mark = toneMark(row.tone);
+        return (
+          <li
+            key={row.id}
+            className={`flex min-h-[7.5rem] flex-col rounded-lg border border-[var(--line)] px-2.5 py-2 ring-1 ${toneRing(row.tone)}`}
+          >
+            <div className="flex items-center gap-1">
+              <span className={`text-[0.65rem] font-bold ${mark.cls}`} aria-hidden>
+                {mark.sym}
+              </span>
+              <p className="line-clamp-2 text-[0.7rem] font-semibold leading-snug text-[var(--ink)]">
+                {row.headline}
               </p>
             </div>
-          </div>
+            <p className="mt-1.5 line-clamp-4 flex-1 text-[0.65rem] leading-snug text-[var(--ink-soft)]">
+              {row.evidence}
+            </p>
+            <p className="mt-1 text-[0.55rem] uppercase tracking-wide text-[var(--ink-muted)]">
+              {row.source}
+            </p>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function SignalCardGrid({
+  items,
+  variant,
+}: {
+  items: string[];
+  variant: "signal" | "risk";
+}) {
+  if (!items.length) return null;
+  const ring =
+    variant === "signal"
+      ? "ring-[var(--accent)]/20 bg-[var(--accent-soft)]"
+      : "ring-[var(--danger)]/25 bg-[var(--danger)]/8";
+  const text = variant === "signal" ? "text-[var(--ink-soft)]" : "text-[var(--danger)]";
+  return (
+    <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      {items.map((x) => (
+        <li
+          key={x}
+          className={`rounded-lg px-2 py-2 text-[0.7rem] leading-snug ring-1 ${ring} ${text}`}
+        >
+          <span className="line-clamp-4">{x}</span>
         </li>
       ))}
     </ul>
@@ -111,9 +145,17 @@ export function UpworkScorePanel({ lead, analysis, analyzedAt }: Props) {
           ? "Whether the Connects cost is justified given competition, both scores, and calibrated rules."
           : "";
 
+  const connectsRequired = lead.connectsRequired;
+
   return (
     <section className="mt-6 space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <StatTile label="Connects required">
+          <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold tabular-nums text-[var(--ink)]">
+            {connectsRequired ?? "—"}
+          </p>
+        </StatTile>
+
         <ScoreTile
           label="Engagement index"
           active={open === "engagement"}
@@ -158,8 +200,8 @@ export function UpworkScorePanel({ lead, analysis, analyzedAt }: Props) {
         <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[var(--shadow)]">
           <h3 className="text-base font-semibold text-[var(--ink)]">{openTitle}</h3>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">{openBlurb}</p>
-          <div className="mt-4">
-            <EvidenceList items={openItems} />
+          <div className="mt-4 max-h-[min(28rem,70vh)] overflow-y-auto pr-1">
+            <EvidenceCardGrid items={openItems} />
           </div>
         </div>
       ) : null}
@@ -168,24 +210,17 @@ export function UpworkScorePanel({ lead, analysis, analyzedAt }: Props) {
         <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5">
           <p className="text-sm leading-relaxed text-[var(--ink)]">{analysis.summary}</p>
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          <div className="mt-5 space-y-4">
             <div>
               <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                 Engagement signals
               </h4>
               {analysis.engagementFactors.length ? (
-                <ul className="mt-2 flex flex-col gap-1.5">
-                  {analysis.engagementFactors.map((x) => (
-                    <li
-                      key={x}
-                      className="rounded-lg bg-[var(--accent-soft)] px-2.5 py-1.5 text-sm text-[var(--ink-soft)] ring-1 ring-[var(--accent)]/20"
-                    >
-                      {x}
-                    </li>
-                  ))}
-                </ul>
+                <SignalCardGrid items={analysis.engagementFactors} variant="signal" />
               ) : (
-                <p className="mt-2 text-sm text-[var(--ink-muted)]">None listed — use engagement tile for raw evidence.</p>
+                <p className="mt-2 text-sm text-[var(--ink-muted)]">
+                  None listed — open the engagement tile for field evidence.
+                </p>
               )}
             </div>
             <div>
@@ -193,16 +228,7 @@ export function UpworkScorePanel({ lead, analysis, analyzedAt }: Props) {
                 Risk flags
               </h4>
               {analysis.riskFlags.length ? (
-                <ul className="mt-2 flex flex-col gap-1.5">
-                  {analysis.riskFlags.map((x) => (
-                    <li
-                      key={x}
-                      className="rounded-lg bg-[var(--danger)]/8 px-2.5 py-1.5 text-sm text-[var(--danger)] ring-1 ring-[var(--danger)]/25"
-                    >
-                      {x}
-                    </li>
-                  ))}
-                </ul>
+                <SignalCardGrid items={analysis.riskFlags} variant="risk" />
               ) : (
                 <p className="mt-2 text-sm text-[var(--ink-muted)]">No risks flagged on last run.</p>
               )}
@@ -223,6 +249,17 @@ export function UpworkScorePanel({ lead, analysis, analyzedAt }: Props) {
         </p>
       )}
     </section>
+  );
+}
+
+function StatTile({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-muted)] px-4 py-3">
+      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+        {label}
+      </p>
+      {children}
+    </div>
   );
 }
 

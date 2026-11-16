@@ -222,8 +222,10 @@ model UpworkJobLead {
   userId           String
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title            String    @default("")
-  jobUrl           String    @default("")
+  jobUrl           String    @default("N/A")
   postedAtText     String    @default("")
+  /// Estimated post time from OCR “X ago” text at capture time
+  postedAt         DateTime?
   description      String    @default("")
   /// JSON string array of skill tags
   techStackJson    String    @default("[]")

@@ -3,6 +3,10 @@ import { z } from "zod";
 import { requireUserId } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { serializeLead } from "@/lib/upwork-db";
+import {
+  derivePostedAtFromRelativeText,
+  normalizeJobUrl,
+} from "@/lib/upwork-posted-at";
 import { upworkLeadInputSchema } from "@/types/upwork-lead";
 
 type Params = { params: Promise<{ id: string }> };
@@ -38,8 +42,15 @@ export async function PATCH(request: Request, { params }: Params) {
       where: { id },
       data: {
         ...(body.title !== undefined ? { title: body.title } : {}),
-        ...(body.jobUrl !== undefined ? { jobUrl: body.jobUrl } : {}),
-        ...(body.postedAtText !== undefined ? { postedAtText: body.postedAtText } : {}),
+        ...(body.jobUrl !== undefined ? { jobUrl: normalizeJobUrl(body.jobUrl) } : {}),
+        ...(body.postedAtText !== undefined
+          ? {
+              postedAtText: body.postedAtText,
+              postedAt:
+                derivePostedAtFromRelativeText(body.postedAtText, new Date()) ??
+                null,
+            }
+          : {}),
         ...(body.description !== undefined ? { description: body.description } : {}),
         ...(body.techStack !== undefined
           ? { techStackJson: JSON.stringify(body.techStack) }

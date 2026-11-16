@@ -4,6 +4,10 @@ import { requireUserId } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { leadFromParsed, serializeLead } from "@/lib/upwork-db";
 import { isDuplicateUpworkLead } from "@/lib/upwork-duplicate";
+import {
+  derivePostedAtFromRelativeText,
+  normalizeJobUrl,
+} from "@/lib/upwork-posted-at";
 import { parsedUpworkJobSchema, upworkLeadInputSchema } from "@/types/upwork-lead";
 
 export async function GET() {
@@ -26,6 +30,7 @@ const createSchema = z.union([
   upworkLeadInputSchema.extend({ allowDuplicate: z.boolean().optional() }),
   z.object({
     parsed: parsedUpworkJobSchema,
+    capturedAt: z.string().datetime().optional(),
     allowDuplicate: z.boolean().optional(),
   }),
 ]);
@@ -36,13 +41,23 @@ export async function POST(request: Request) {
     const body = createSchema.parse(await request.json());
     const allowDuplicate = body.allowDuplicate === true;
 
+    const capturedAt =
+      "capturedAt" in body && body.capturedAt
+        ? new Date(body.capturedAt)
+        : undefined;
+
     const data =
       "parsed" in body
-        ? leadFromParsed(body.parsed)
-        : {
+        ? leadFromParsed(body.parsed, { capturedAt })
+        : (() => {
+            const postedAtText = body.postedAtText?.trim() || "";
+            const ref = capturedAt ?? new Date();
+            return {
             title: body.title,
-            jobUrl: body.jobUrl?.trim() || "",
-            postedAtText: body.postedAtText?.trim() || "",
+            jobUrl: normalizeJobUrl(body.jobUrl),
+            postedAtText,
+            postedAt:
+              derivePostedAtFromRelativeText(postedAtText, ref) ?? undefined,
             description: body.description?.trim() || "",
             techStackJson: JSON.stringify(body.techStack ?? []),
             connectsRequired: body.connectsRequired ?? null,
@@ -56,6 +71,7 @@ export async function POST(request: Request) {
             notes: body.notes?.trim() || "",
             status: body.status ?? "interested",
           };
+          })();
 
     if (!data.clientName && "clientInfoJson" in data) {
       try {

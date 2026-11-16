@@ -1,6 +1,10 @@
 import type { UpworkJobLead } from "@prisma/client";
 import type { ParsedUpworkJob, UpworkAnalysis } from "@/types/upwork-lead";
 import { clientDisplayName } from "@/types/upwork-lead";
+import {
+  derivePostedAtFromRelativeText,
+  normalizeJobUrl,
+} from "@/lib/upwork-posted-at";
 
 export function parseTechStackJson(raw: string): string[] {
   try {
@@ -22,12 +26,22 @@ export function parseJsonObject(raw: string): Record<string, unknown> {
   }
 }
 
-export function leadFromParsed(parsed: ParsedUpworkJob) {
+export function leadFromParsed(
+  parsed: ParsedUpworkJob,
+  opts?: { capturedAt?: Date },
+) {
   const client = parsed.client;
+  const capturedAt = opts?.capturedAt ?? new Date();
+  const postedAt =
+    parsed.postedAtIso && !Number.isNaN(Date.parse(parsed.postedAtIso))
+      ? new Date(parsed.postedAtIso)
+      : derivePostedAtFromRelativeText(parsed.postedAtText, capturedAt);
+
   return {
     title: parsed.title.trim() || "Untitled job",
-    jobUrl: parsed.jobUrl?.trim() || "",
+    jobUrl: normalizeJobUrl(parsed.jobUrl),
     postedAtText: parsed.postedAtText?.trim() || "",
+    postedAt: postedAt ?? undefined,
     description: parsed.description.trim(),
     techStackJson: JSON.stringify(parsed.techStack ?? []),
     connectsRequired: parsed.connectsRequired ?? null,
@@ -46,8 +60,9 @@ export function serializeLead(row: UpworkJobLead) {
   return {
     id: row.id,
     title: row.title,
-    jobUrl: row.jobUrl,
+    jobUrl: normalizeJobUrl(row.jobUrl),
     postedAtText: row.postedAtText,
+    postedAt: row.postedAt?.toISOString() ?? null,
     description: row.description,
     techStack: parseTechStackJson(row.techStackJson),
     connectsRequired: row.connectsRequired,

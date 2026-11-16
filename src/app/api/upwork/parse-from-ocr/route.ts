@@ -7,9 +7,12 @@ import {
 } from "@/lib/ai/upwork";
 import { generateWithFallback } from "@/lib/ai/providers";
 import { normalizeUpworkParsed } from "@/lib/normalize-upwork-parsed";
+import { derivePostedAtFromRelativeText } from "@/lib/upwork-posted-at";
 
 const schema = z.object({
   ocrText: z.string().min(80),
+  /** When browser OCR finished — used to resolve “posted 2 hours ago”. */
+  capturedAt: z.string().datetime().optional(),
 });
 
 export async function POST(request: Request) {
@@ -36,8 +39,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: message }, { status: 422 });
     }
 
+    const capturedAt = body.capturedAt
+      ? new Date(body.capturedAt)
+      : new Date();
+    const postedAt = derivePostedAtFromRelativeText(parsed.postedAtText, capturedAt);
+    const withPosted = {
+      ...parsed,
+      postedAtIso: postedAt?.toISOString(),
+    };
+
     return NextResponse.json({
-      parsed,
+      parsed: withPosted,
+      capturedAt: capturedAt.toISOString(),
       ocrCharCount: body.ocrText.length,
       provider: result.provider,
       model: result.model,

@@ -10,6 +10,10 @@ import { UpworkClientCard } from "@/components/upwork-client-card";
 import { UpworkScorePanel } from "@/components/upwork-score-panel";
 import { Button } from "@/components/ui";
 import type { AtsAnalysis } from "@/components/upwork-ats-card";
+import {
+  formatJobPostedAt,
+  isUsableJobUrl,
+} from "@/lib/upwork-posted-at";
 import type { UpworkAnalysis } from "@/types/upwork-lead";
 
 type LeadDetail = {
@@ -17,6 +21,7 @@ type LeadDetail = {
   title: string;
   jobUrl: string;
   postedAtText: string;
+  postedAt: string | null;
   description: string;
   techStack: string[];
   connectsRequired: number | null;
@@ -122,19 +127,26 @@ export default function UpworkLeadDetailPage() {
             {lead.title}
           </h1>
           <p className="mt-2 text-sm text-[var(--ink-muted)]">
-            {lead.clientName} · Posted {lead.postedAtText || "—"} · {lead.connectsRequired ?? "?"}{" "}
-            Connects
+            {lead.clientName} · Posted{" "}
+            {formatJobPostedAt(lead.postedAt, lead.postedAtText)}
+            {lead.postedAtText ? ` (${lead.postedAtText})` : ""} ·{" "}
+            {lead.connectsRequired ?? "?"} Connects
           </p>
-          {lead.jobUrl ? (
-            <a
-              href={lead.jobUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-1 inline-block text-sm text-[var(--accent)]"
-            >
-              Open job link
-            </a>
-          ) : null}
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+            Job URL:{" "}
+            {isUsableJobUrl(lead.jobUrl) ? (
+              <a
+                href={lead.jobUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-[var(--accent)] hover:underline"
+              >
+                {lead.jobUrl}
+              </a>
+            ) : (
+              "N/A"
+            )}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={runAnalysis} disabled={analyzing}>
@@ -185,6 +197,32 @@ export default function UpworkLeadDetailPage() {
         <section className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6">
           <h2 className="text-lg font-semibold text-[var(--ink)]">Job details</h2>
           <dl className="mt-4 space-y-2 text-sm">
+            <div>
+              <dt className="text-[var(--ink-muted)]">Job URL</dt>
+              <dd>
+                {isUsableJobUrl(lead.jobUrl) ? (
+                  <a
+                    href={lead.jobUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all text-[var(--accent)] hover:underline"
+                  >
+                    {lead.jobUrl}
+                  </a>
+                ) : (
+                  "N/A"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[var(--ink-muted)]">Posted</dt>
+              <dd>
+                {formatJobPostedAt(lead.postedAt, lead.postedAtText)}
+                {lead.postedAtText ? (
+                  <span className="text-[var(--ink-muted)]"> · OCR: {lead.postedAtText}</span>
+                ) : null}
+              </dd>
+            </div>
             <div>
               <dt className="text-[var(--ink-muted)]">Rate</dt>
               <dd>{lead.hourlyRateText || "—"}</dd>
