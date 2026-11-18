@@ -188,6 +188,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const leadsActive = isActivePath(pathname, "/upwork");
   const applicationsActive = isActivePath(pathname, "/applications");
+  const companiesActive = isActivePath(pathname, "/companies");
   const dashboardActive = isActivePath(pathname, "/dashboard");
 
   const mobileLinks = [
@@ -195,6 +196,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     ...resumeLinks,
     { href: "/upwork", label: "Project leads" },
     { href: "/applications", label: "Applications" },
+    { href: "/companies", label: "Companies" },
   ];
 
   return (
@@ -217,6 +219,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
             <Link href="/applications" className={navPillClass(applicationsActive)}>
               Job applications
+            </Link>
+            <Link href="/companies" className={navPillClass(companiesActive)}>
+              Companies
             </Link>
           </nav>
           <UserMenu email={data?.user?.email} />

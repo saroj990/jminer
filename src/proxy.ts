@@ -10,6 +10,7 @@ const protectedPrefixes = [
   "/builder",
   "/upwork",
   "/applications",
+  "/companies",
 ];
 
 export async function proxy(request: NextRequest) {
@@ -42,5 +43,6 @@ export const config = {
     "/upwork/:path*",
     "/builder/:path*",
     "/applications/:path*",
+    "/companies/:path*",
   ],
 };
