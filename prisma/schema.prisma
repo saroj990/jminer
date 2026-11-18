@@ -18,9 +18,11 @@ model User {
   profile       Profile?
   resumes       Resume[]
   preferences   UserPreferences?
-  emailTokens   EmailVerificationToken[]
-  upworkLeads      UpworkJobLead[]
-  jobApplications  JobApplication[]
+  emailTokens        EmailVerificationToken[]
+  upworkLeads        UpworkJobLead[]
+  jobApplications    JobApplication[]
+  trackedCompanies   TrackedCompany[]
+  companyJobListings CompanyJobListing[]
 }
 
 model EmailVerificationToken {
@@ -274,6 +276,47 @@ model JobApplication {
   atsScoredAt       DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+}
+
+model TrackedCompany {
+  id                   String               @id @default(cuid())
+  userId               String
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                 String               @default("")
+  websiteUrl           String               @default("N/A")
+  careersUrl           String               @default("")
+  careersUrlSource     String               @default("")
+  fetchIntervalMinutes Int                  @default(1440)
+  lastFetchedAt        DateTime?
+  lastFetchStatus      String               @default("")
+  lastFetchError       String               @default("")
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  listings             CompanyJobListing[]
+}
+
+model CompanyJobListing {
+  id                  String          @id @default(cuid())
+  userId              String
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId           String
+  company             TrackedCompany  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title               String          @default("")
+  jobUrl              String          @default("N/A")
+  locationText        String          @default("")
+  descriptionSnippet  String          @default("")
+  techStackJson       String          @default("[]")
+  externalKey         String          @default("")
+  active              Boolean         @default(true)
+  firstSeenAt         DateTime        @default(now())
+  lastSeenAt          DateTime        @default(now())
+  skillFitScore       Int?
+  skillFitJson        String          @default("{}")
+  skillFitAt          DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@unique([companyId, externalKey])
 }
 
 model ResumeVersion {
